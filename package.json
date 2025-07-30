@@ -4,7 +4,7 @@
   "description": "A Hono backend project",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "dotenv -- nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
+    "dev": "NODE_ENV=development dotenv -- nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
     "build": "pnpm db:migrate && tsc",
     "start": "node dist/index.js",
     "lint": "eslint 'src/**/*.ts'",
