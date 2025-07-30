@@ -1,0 +1,63 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Drizzle ORM migration output
+drizzle/
+
+# Coverage reports (if you use testing with coverage)
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Miscellaneous
+.env.test
+
+# Optional: jetbrains IDE config folders
+.idea/
+
+# Optional: MacOS metadata
+._*
+
+# Optional: cloudinary cache or uploads folder (if you keep locally)
+uploads/
+.cache/
+
+# Optional: Husky hooks (sometimes added)
+.husky/
+
+# Optional: Debug directories
+.debug/
+
+# Optional: Redis dump files if any locally
+dump.rdb
