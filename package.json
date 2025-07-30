@@ -5,11 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "dotenv -- nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
-    "build": "tsc",
+    "build": "pnpm db:migrate && tsc",
     "start": "node dist/index.js",
     "lint": "eslint 'src/**/*.ts'",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "dotenv -- ts-node src/db/migrate.ts"
+    "db:migrate": "dotenv -- ts-node src/db/migrate.ts",
+    "test": "eslint 'src/**/*.ts'"
   },
   "dependencies": {
     "@hono/node-server": "^1.17.1",

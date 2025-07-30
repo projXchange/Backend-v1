@@ -30,9 +30,6 @@ Thumbs.db
 # TypeScript cache
 *.tsbuildinfo
 
-# Drizzle ORM migration output
-drizzle/
-
 # Coverage reports (if you use testing with coverage)
 coverage/
 
