@@ -12,7 +12,7 @@ app.openapi(statusRoute, statusHandler);
 app.doc('/doc', {
   openapi: '3.0.0',
   info: {
-    title: 'My API',
+    title: 'ProjXChange API',
     version: '1.0.0',
   },
 });
