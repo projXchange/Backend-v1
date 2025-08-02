@@ -1,12 +1,35 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
-import { rootRoute, rootHandler, statusRoute, statusHandler } from './routes';
+import { 
+  rootRoute, 
+  rootHandler, 
+  statusRoute, 
+  statusHandler,
+  signupRoute,
+  signupHandler,
+  signinRoute,
+  signinHandler,
+  logoutRoute,
+  logoutHandler,
+  forgotPasswordRoute,
+  forgotPasswordHandler,
+  resetPasswordRoute,
+  resetPasswordHandler,
+} from './routes';
 
 const app = new OpenAPIHono();
 
+// Root routes
 app.openapi(rootRoute, rootHandler);
 app.openapi(statusRoute, statusHandler);
+
+// Auth routes
+app.openapi(signupRoute, signupHandler);
+app.openapi(signinRoute, signinHandler);
+app.openapi(logoutRoute, logoutHandler);
+app.openapi(forgotPasswordRoute, forgotPasswordHandler);
+app.openapi(resetPasswordRoute, resetPasswordHandler);
 
 // Serve OpenAPI spec at /doc
 app.doc('/doc', {
@@ -14,7 +37,14 @@ app.doc('/doc', {
   info: {
     title: 'ProjXChange API',
     version: '1.0.0',
+    description: 'API for ProjXChange platform with authentication',
   },
+  servers: [
+    {
+      url: 'http://localhost:3000',
+      description: 'Development server',
+    },
+  ],
 });
 
 // Serve Swagger UI at /api/doc

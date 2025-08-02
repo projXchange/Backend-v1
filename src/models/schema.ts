@@ -12,12 +12,13 @@ import {
   uniqueIndex
 } from "drizzle-orm/pg-core";
 import { experienceLevelEnum, userTypeEnum, verificationStatusEnum } from "../constants/users";
+import { sql } from "drizzle-orm";
 
 
 export const users = pgTable(
   "users",
   {
-    id: uuid("id").primaryKey().notNull(),
+    id: uuid("id").primaryKey().notNull().default(sql`uuid_generate_v4()`),
     email: varchar("email", { length: 320 }).notNull(),
     full_name: varchar("full_name", { length: 100 }),
     password: varchar("password", { length: 128 }).notNull(),
@@ -28,6 +29,8 @@ export const users = pgTable(
     updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
     last_login: timestamp("last_login").notNull().defaultNow(),
     email_verified: boolean("email_verified").notNull().default(false),
+    forgot_password_token: varchar("forgot_password_token", { length: 128 }),
+    forgot_password_expiry: timestamp("forgot_password_expiry"),
   },
   (users) => {
     return {

@@ -17,13 +17,17 @@
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.0.2",
     "@hono/zod-validator": "^0.7.2",
+    "@types/ms": "^2.1.0",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "hono": "^4.8.10",
+    "jsonwebtoken": "^8.5.1",
     "postgres": "^3.4.7",
     "zod": "^4.0.14"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
