@@ -1,7 +1,14 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { signup, signin, logout, forgotPassword, resetPassword } from '../controllers/users.controller';
+import { OpenAPIHono } from '@hono/zod-openapi';
+import { 
+  signup, 
+  signin, 
+  logout, 
+  forgotPassword, 
+  resetPassword 
+} from '../controllers/users.controller';
 
-// Zod schemas for request/response validation
+// Schemas
 const SignupRequest = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -48,10 +55,10 @@ const MessageResponse = z.object({
   message: z.string(),
 });
 
-// POST /signup
-export const signupRoute = createRoute({
+// Route definitions
+const signupRoute = createRoute({
   method: 'post',
-  path: '/signup',
+  path: '/auth/signup',
   request: {
     body: {
       content: {
@@ -82,10 +89,9 @@ export const signupRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// POST /signin
-export const signinRoute = createRoute({
+const signinRoute = createRoute({
   method: 'post',
-  path: '/signin',
+  path: '/auth/signin',
   request: {
     body: {
       content: {
@@ -116,10 +122,9 @@ export const signinRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// POST /logout
-export const logoutRoute = createRoute({
+const logoutRoute = createRoute({
   method: 'post',
-  path: '/logout',
+  path: '/auth/logout',
   responses: {
     200: {
       description: 'User logged out successfully',
@@ -133,10 +138,9 @@ export const logoutRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// POST /forgot-password
-export const forgotPasswordRoute = createRoute({
+const forgotPasswordRoute = createRoute({
   method: 'post',
-  path: '/forgot-password',
+  path: '/auth/forgot-password',
   request: {
     body: {
       content: {
@@ -167,10 +171,9 @@ export const forgotPasswordRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// POST /reset-password/:token
-export const resetPasswordRoute = createRoute({
+const resetPasswordRoute = createRoute({
   method: 'post',
-  path: '/reset-password/{token}',
+  path: '/auth/reset-password/{token}',
   request: {
     params: z.object({
       token: z.string(),
@@ -204,11 +207,11 @@ export const resetPasswordRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// Export handlers
-export {
-  signup as signupHandler,
-  signin as signinHandler,
-  logout as logoutHandler,
-  forgotPassword as forgotPasswordHandler,
-  resetPassword as resetPasswordHandler,
-};
+// Register all auth routes
+export function authUsersRoutes(app: OpenAPIHono) {
+  app.openapi(signupRoute, signup);
+  app.openapi(signinRoute, signin);
+  app.openapi(logoutRoute, logout);
+  app.openapi(forgotPasswordRoute, forgotPassword);
+  app.openapi(resetPasswordRoute, resetPassword);
+}

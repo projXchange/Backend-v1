@@ -1,45 +1,24 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
-import { 
-  rootRoute, 
-  rootHandler, 
-  statusRoute, 
-  statusHandler,
-  signupRoute,
-  signupHandler,
-  signinRoute,
-  signinHandler,
-  logoutRoute,
-  logoutHandler,
-  forgotPasswordRoute,
-  forgotPasswordHandler,
-  resetPasswordRoute,
-  resetPasswordHandler,
-} from './routes';
+import { cors } from 'hono/cors';
+import { rootRoutes } from './routes/root.route';
+import { authUsersRoutes } from './routes/users.route';
 
 const app = new OpenAPIHono();
 
-//cors middleware
-app.use('*', (c, next) => {
-  c.header('Access-Control-Allow-Origin', '*');
-  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  return next();
-});
+app.use('*', cors({
+  origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  maxAge: 600,
+  credentials: true,
+}));
 
-// Root routes
-app.openapi(rootRoute, rootHandler);
-app.openapi(statusRoute, statusHandler);
+rootRoutes(app);
+authUsersRoutes(app);
 
-// Auth routes
-app.openapi(signupRoute, signupHandler);
-app.openapi(signinRoute, signinHandler);
-app.openapi(logoutRoute, logoutHandler);
-app.openapi(forgotPasswordRoute, forgotPasswordHandler);
-app.openapi(resetPasswordRoute, resetPasswordHandler);
-
-// Serve OpenAPI spec at /doc
 app.doc('/doc', {
   openapi: '3.0.0',
   info: {
@@ -49,16 +28,18 @@ app.doc('/doc', {
   },
   servers: [
     {
+      url: 'https://projxchange-backend-v1.vercel.app/',
+      description: 'Production server',
+    },
+    {
       url: 'http://localhost:3000',
       description: 'Development server',
     },
   ],
 });
 
-// Serve Swagger UI at /api/doc
 app.get('/api/doc', swaggerUI({ url: '/doc' }));
 
-// Start server
 serve({ fetch: app.fetch, port: 3000 }, (info) => {
   console.log(`Listening on http://localhost:${info.port}`);
   console.log(`API Docs at http://localhost:${info.port}/api/doc`);
