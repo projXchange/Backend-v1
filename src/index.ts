@@ -20,6 +20,14 @@ import {
 
 const app = new OpenAPIHono();
 
+//cors middleware
+app.use('*', (c, next) => {
+  c.header('Access-Control-Allow-Origin', '*');
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return next();
+});
+
 // Root routes
 app.openapi(rootRoute, rootHandler);
 app.openapi(statusRoute, statusHandler);
