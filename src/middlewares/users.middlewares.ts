@@ -1,16 +1,17 @@
 import { verifyToken } from "../utils/jwt.util";
 
-
 export const isLoggedIn = async (c: any, next: any) => {
   const auth = c.req.header("Authorization");
-  const token = auth?.replace("Bearer ", "");
-  if (!token) return c.json({ error: "Unauthorized" }, 401);
+  if (!auth) return c.json({ error: "Authorization header missing" }, 401);
+
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return c.json({ error: "Malformed Authorization header" }, 401);
 
   try {
     const decoded = verifyToken(token);
     c.set("user", (decoded as any).id);
     return next();
-  } catch {
-    return c.json({ error: "Token expired or invalid" }, 401);
+  } catch (error: any) {
+    return c.json({ error: error.message || "Token invalid" }, 401);
   }
 };
