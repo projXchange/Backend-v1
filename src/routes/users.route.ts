@@ -77,14 +77,6 @@ const signupRoute = createRoute({
         },
       },
     },
-    400: {
-      description: 'Bad request - validation error or email exists',
-      content: {
-        'application/json': {
-          schema: ErrorResponse,
-        },
-      },
-    },
   },
   tags: ['Authentication'],
 });
@@ -107,14 +99,6 @@ const signinRoute = createRoute({
       content: {
         'application/json': {
           schema: AuthResponse,
-        },
-      },
-    },
-    400: {
-      description: 'Invalid credentials',
-      content: {
-        'application/json': {
-          schema: ErrorResponse,
         },
       },
     },
@@ -159,14 +143,6 @@ const forgotPasswordRoute = createRoute({
         },
       },
     },
-    400: {
-      description: 'Email not registered',
-      content: {
-        'application/json': {
-          schema: ErrorResponse,
-        },
-      },
-    },
   },
   tags: ['Authentication'],
 });
@@ -192,14 +168,6 @@ const resetPasswordRoute = createRoute({
       content: {
         'application/json': {
           schema: AuthResponse,
-        },
-      },
-    },
-    400: {
-      description: 'Invalid or expired token',
-      content: {
-        'application/json': {
-          schema: ErrorResponse,
         },
       },
     },
