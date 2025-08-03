@@ -8,8 +8,8 @@ class PasswordError extends Error {
 }
 
 export const hashPassword = async (password: string) => {
-  if (!password || typeof password !== "string" || password.length < 8) {
-    throw new PasswordError("Password must be at least 8 characters");
+  if (!password || typeof password !== "string" || password.length < 6) {
+    throw new PasswordError("Password must be at least 6 characters");
   }
   try {
     return await bcrypt.hash(password, 12);
