@@ -1,28 +1,70 @@
 
 import crypto from "crypto";
-import { createUser, findByEmail, findByForgotToken, updateUser } from "../repository/users.repository";
+import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, checkUsernameExists } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
 import { sendMail } from "../utils/email.utils";
 
 export const signup = async (c: any) => {
-  const { email, password, username, full_name } = await c.req.json();
-  if (!(email && password && username)) return c.json({ error: "Missing required fields" }, 400);
-
-  if (!/^\S+@\S+\.\S+$/.test(email)) return c.json({ error: "Invalid email" }, 400);
-  if (password.length < 6) return c.json({ error: "Password must be at least 6 characters" }, 400);
-
-  if ((await findByEmail(email)).length) return c.json({ error: "Email already in use" }, 400);
-
   try {
+    const { email, password, username, full_name } = await c.req.json();
+    
+    // Validate required fields
+    if (!(email && password && username)) {
+      return c.json({ error: "Missing required fields: email, password, username" }, 400);
+    }
+
+    // Validate email format
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return c.json({ error: "Invalid email format" }, 400);
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return c.json({ error: "Password must be at least 8 characters" }, 400);
+    }
+
+    // Validate username format (optional: add your own rules)
+    if (username.length < 3 || username.length > 50) {
+      return c.json({ error: "Username must be between 3 and 50 characters" }, 400);
+    }
+
+    // Check if email already exists
+    if (await checkEmailExists(email)) {
+      return c.json({ error: "Email already exists" }, 400);
+    }
+
+    // Check if username already exists
+    if (await checkUsernameExists(username)) {
+      return c.json({ error: "Username already exists" }, 400);
+    }
+
+    // Create user
     const hashed = await hashPassword(password);
-    const [newUser] = await createUser({ email, password: hashed, username, full_name });
+    const [newUser] = await createUser({ 
+      email, 
+      password: hashed, 
+      username, 
+      full_name 
+    });
+    
     const accessToken = generateAccessToken(newUser.id);
     const refreshToken = generateRefreshToken(newUser.id);
 
-    return c.json({ user: newUser, accessToken, refreshToken });
+    // Remove password from response
+    const { password: _, ...userResponse } = newUser;
+    
+    return c.json({ 
+      user: userResponse, 
+      accessToken, 
+      refreshToken 
+    });
+    
   } catch (error: any) {
-    return c.json({ error: error.message || "Failed to sign up" }, 500);
+    console.error("Signup error:", error);
+    return c.json({ 
+      error: error.message || "Failed to create account" 
+    }, 500);
   }
 };
 
