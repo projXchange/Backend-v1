@@ -8,11 +8,9 @@ import {
   resetPassword 
 } from '../controllers/users.controller';
 
-// Schemas
 const SignupRequest = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  username: z.string().min(3),
   full_name: z.string().optional(),
 });
 
@@ -32,7 +30,6 @@ const ResetPasswordRequest = z.object({
 const UserResponse = z.object({
   id: z.string(),
   email: z.string(),
-  username: z.string(),
   full_name: z.string().nullable(),
   user_type: z.string(),
   verification_status: z.string(),
@@ -47,15 +44,10 @@ const AuthResponse = z.object({
   refreshToken: z.string(),
 });
 
-const ErrorResponse = z.object({
-  error: z.string(),
-});
-
 const MessageResponse = z.object({
   message: z.string(),
 });
 
-// Route definitions
 const signupRoute = createRoute({
   method: 'post',
   path: '/auth/signup',
@@ -175,7 +167,6 @@ const resetPasswordRoute = createRoute({
   tags: ['Authentication'],
 });
 
-// Register all auth routes
 export function authUsersRoutes(app: OpenAPIHono) {
   app.openapi(signupRoute, signup);
   app.openapi(signinRoute, signin);

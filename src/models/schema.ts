@@ -1,6 +1,5 @@
 import {
   pgTable,
-  serial,
   varchar,
   text,
   boolean,
@@ -14,7 +13,6 @@ import {
 import { experienceLevelEnum, userTypeEnum, verificationStatusEnum } from "../constants/users";
 import { sql } from "drizzle-orm";
 
-
 export const users = pgTable(
   "users",
   {
@@ -22,7 +20,6 @@ export const users = pgTable(
     email: varchar("email", { length: 320 }).notNull(),
     full_name: varchar("full_name", { length: 100 }),
     password: varchar("password", { length: 128 }).notNull(),
-    username: varchar("username", { length: 50 }).notNull(),
     user_type: userTypeEnum("user_type").notNull().default("buyer"),
     verification_status: verificationStatusEnum("verification_status").notNull().default("pending"),
     created_at: timestamp("created_at").notNull().defaultNow(),

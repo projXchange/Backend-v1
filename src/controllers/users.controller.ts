@@ -1,17 +1,16 @@
-
 import crypto from "crypto";
-import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, checkUsernameExists } from "../repository/users.repository";
+import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
 import { sendMail } from "../utils/email.utils";
 
 export const signup = async (c: any) => {
   try {
-    const { email, password, username, full_name } = await c.req.json();
+    const { email, password, full_name } = await c.req.json();
     
     // Validate required fields
-    if (!(email && password && username)) {
-      return c.json({ error: "Missing required fields: email, password, username" }, 400);
+    if (!(email && password)) {
+      return c.json({ error: "Missing required fields: email, password" }, 400);
     }
 
     // Validate email format
@@ -24,19 +23,9 @@ export const signup = async (c: any) => {
       return c.json({ error: "Password must be at least 8 characters" }, 400);
     }
 
-    // Validate username format (optional: add your own rules)
-    if (username.length < 3 || username.length > 50) {
-      return c.json({ error: "Username must be between 3 and 50 characters" }, 400);
-    }
-
     // Check if email already exists
     if (await checkEmailExists(email)) {
       return c.json({ error: "Email already exists" }, 400);
-    }
-
-    // Check if username already exists
-    if (await checkUsernameExists(username)) {
-      return c.json({ error: "Username already exists" }, 400);
     }
 
     // Create user
@@ -44,7 +33,6 @@ export const signup = async (c: any) => {
     const [newUser] = await createUser({ 
       email, 
       password: hashed, 
-      username, 
       full_name 
     });
     
@@ -88,7 +76,6 @@ export const signin = async (c: any) => {
     return c.json({ error: error.message || "Failed to sign in" }, 500);
   }
 };
-
 
 export const logout = async (c: any) => {
   try {
