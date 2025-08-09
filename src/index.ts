@@ -6,7 +6,7 @@ import { rootRoutes } from './routes/root.route';
 import { authUsersRoutes } from './routes/users.route';
 import { adminUsersRoutes } from './routes/admin-users.route';
 import { usersDumpRoutes } from './routes/users-dump.route';
-
+ 
 const app = new OpenAPIHono();
 
 app.use('*', cors({
