@@ -68,10 +68,11 @@ export const signin = async (c: any) => {
     if (!(await comparePassword(password, user.password))) {
       return c.json({ error: "Invalid credentials, password mismatch" }, 400);
     }
-
+    // Remove password from response
+    const { password: _, ...userResponse } = user;
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    return c.json({ user, accessToken, refreshToken });
+    return c.json({  user: userResponse, accessToken, refreshToken });
   }catch(error:any){  
     return c.json({ error: error.message || "Failed to sign in" }, 500);
   }
