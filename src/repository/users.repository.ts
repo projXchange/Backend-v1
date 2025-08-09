@@ -43,12 +43,16 @@ export const findByEmail = async (email: string, includeDeleted = false) => {
       throw new UserRepositoryError("Invalid email parameter");
     }
     
-    const whereConditions = [eq(users.email, email.toLowerCase().trim())];
-    if (!includeDeleted) {
-      whereConditions.push(ne(users.status, "deleted"));
+    if (includeDeleted) {
+      return await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+    } else {
+      return await db.select().from(users).where(
+        and(
+          eq(users.email, email.toLowerCase().trim()),
+          ne(users.status, "deleted")
+        )
+      );
     }
-    
-    return await db.select().from(users).where(and(...whereConditions));
   } catch (error) {
     if (error instanceof UserRepositoryError) throw error;
     throw new UserRepositoryError(`Failed to find user by email: ${error}`);
@@ -61,12 +65,18 @@ export const findById = async (id: string, includeDeleted = false) => {
       throw new UserRepositoryError("Invalid user ID parameter");
     }
     
-    const whereConditions = [eq(users.id, id)];
-    if (!includeDeleted) {
-      whereConditions.push(ne(users.status, "deleted"));
+    let result;
+    if (includeDeleted) {
+      result = await db.select().from(users).where(eq(users.id, id));
+    } else {
+      result = await db.select().from(users).where(
+        and(
+          eq(users.id, id),
+          ne(users.status, "deleted")
+        )
+      );
     }
     
-    const result = await db.select().from(users).where(and(...whereConditions));
     if (!result.length) {
       throw new UserNotFoundError(`User with ID ${id} not found`);
     }
@@ -79,12 +89,11 @@ export const findById = async (id: string, includeDeleted = false) => {
 
 export const findAllUsers = async (includeDeleted = false) => {
   try {
-    const whereConditions = includeDeleted ? [] : [ne(users.status, "deleted")];
-    
-    if (whereConditions.length > 0) {
-      return await db.select().from(users).where(and(...whereConditions));
+    if (includeDeleted) {
+      return await db.select().from(users);
+    } else {
+      return await db.select().from(users).where(ne(users.status, "deleted"));
     }
-    return await db.select().from(users);
   } catch (error) {
     throw new UserRepositoryError(`Failed to fetch users: ${error}`);
   }
