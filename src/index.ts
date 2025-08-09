@@ -10,7 +10,7 @@ import { usersDumpRoutes } from './routes/users-dump.route';
 const app = new OpenAPIHono();
 
 app.use('*', cors({
-  origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:5173', 'https://projxchange-frontend-v1.vercel.app'],
+  origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:5173', 'https://projxchange-frontend-v1.vercel.app', '*'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
