@@ -1,0 +1,11 @@
+ALTER TABLE "users_dump" ALTER COLUMN "avatar" DROP NOT NULL;
+ALTER TABLE "users_dump" ALTER COLUMN "bio" DROP NOT NULL;
+ALTER TABLE "users_dump" ALTER COLUMN "location" DROP NOT NULL;
+ALTER TABLE "users_dump" ALTER COLUMN "website" DROP NOT NULL;
+ALTER TABLE "users_dump" ALTER COLUMN "social_links" DROP NOT NULL;
+ALTER TABLE "users" ADD COLUMN "status" "user_status_enum" DEFAULT 'active' NOT NULL;
+ALTER TABLE "users" ADD COLUMN "deleted_at" timestamp;
+ALTER TABLE "users_dump" ADD COLUMN "status" "user_status_enum" DEFAULT 'active' NOT NULL;
+ALTER TABLE "users_dump" ADD COLUMN "created_at" timestamp DEFAULT now() NOT NULL;
+ALTER TABLE "users_dump" ADD COLUMN "updated_at" timestamp DEFAULT now() NOT NULL;
+ALTER TABLE "users_dump" ADD COLUMN "deleted_at" timestamp;

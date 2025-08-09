@@ -36,6 +36,13 @@
       "when": 1754761441057,
       "tag": "0004_naive_guardsmen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1754767082155,
+      "tag": "0005_talented_jamie_braddock",
+      "breakpoints": true
     }
   ]
 }
