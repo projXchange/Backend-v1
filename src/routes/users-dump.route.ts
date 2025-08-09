@@ -195,10 +195,10 @@ export function usersDumpRoutes(app: OpenAPIHono) {
   app.use('/users/profile/*', isLoggedIn);
   app.use('/admin/users/profiles/*', isLoggedIn, requireManager);
   
-  app.openapi(createUserProfileRoute, createUserProfile);
-  app.openapi(updateUserProfileRoute, updateUserProfile);
-  app.openapi(getUserProfileRoute, getUserProfile);
+  app.openapi(getMyProfileRoute, getMyProfile);        // /users/profile/me (specific)
+  app.openapi(createUserProfileRoute, createUserProfile); // /users/profile (base)
+  app.openapi(getUserProfileRoute, getUserProfile);    // /users/profile/{id} (parameterized)
+  app.openapi(updateUserProfileRoute, updateUserProfile); // /users/profile/{id}
+  app.openapi(deleteUserProfileRoute, deleteUserProfile); // /users/profile/{id}
   app.openapi(getAllUserProfilesRoute, getAllUserProfiles);
-  app.openapi(deleteUserProfileRoute, deleteUserProfile);
-  app.openapi(getMyProfileRoute, getMyProfile);
 }
