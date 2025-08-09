@@ -1,4 +1,4 @@
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, ne, isNull } from "drizzle-orm";
 import { users } from "../models/schema";
 import db from "./db";
 
@@ -20,39 +20,53 @@ export interface CreateUserData {
   email: string;
   password: string;
   full_name?: string;
-  user_type?: "buyer" | "seller";
+  user_type?: "buyer" | "seller" | "admin" | "manager";
 }
 
 export interface UpdateUserData {
   email?: string;
   full_name?: string;
   password?: string;
-  user_type?: "buyer" | "seller";
+  user_type?: "buyer" | "seller" | "admin" | "manager";
   verification_status?: "pending" | "verified" | "rejected";
+  status?: "active" | "inactive" | "deleted";
   last_login?: Date;
   email_verified?: boolean;
   forgot_password_token?: string | null;
   forgot_password_expiry?: Date | null;
+  deleted_at?: Date | null;
 }
 
-export const findByEmail = async (email: string) => {
+export const findByEmail = async (email: string, includeDeleted = false) => {
   try {
     if (!email || typeof email !== "string") {
       throw new UserRepositoryError("Invalid email parameter");
     }
-    return await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+    
+    const whereConditions = [eq(users.email, email.toLowerCase().trim())];
+    if (!includeDeleted) {
+      whereConditions.push(ne(users.status, "deleted"));
+    }
+    
+    return await db.select().from(users).where(and(...whereConditions));
   } catch (error) {
     if (error instanceof UserRepositoryError) throw error;
     throw new UserRepositoryError(`Failed to find user by email: ${error}`);
   }
 };
 
-export const findById = async (id: string) => {
+export const findById = async (id: string, includeDeleted = false) => {
   try {
     if (!id || typeof id !== "string") {
       throw new UserRepositoryError("Invalid user ID parameter");
     }
-    const result = await db.select().from(users).where(eq(users.id, id));
+    
+    const whereConditions = [eq(users.id, id)];
+    if (!includeDeleted) {
+      whereConditions.push(ne(users.status, "deleted"));
+    }
+    
+    const result = await db.select().from(users).where(and(...whereConditions));
     if (!result.length) {
       throw new UserNotFoundError(`User with ID ${id} not found`);
     }
@@ -60,6 +74,19 @@ export const findById = async (id: string) => {
   } catch (error) {
     if (error instanceof UserRepositoryError) throw error;
     throw new UserRepositoryError(`Failed to find user by ID: ${error}`);
+  }
+};
+
+export const findAllUsers = async (includeDeleted = false) => {
+  try {
+    const whereConditions = includeDeleted ? [] : [ne(users.status, "deleted")];
+    
+    if (whereConditions.length > 0) {
+      return await db.select().from(users).where(and(...whereConditions));
+    }
+    return await db.select().from(users);
+  } catch (error) {
+    throw new UserRepositoryError(`Failed to fetch users: ${error}`);
   }
 };
 
@@ -119,6 +146,18 @@ export const updateUser = async (id: string, updateObj: UpdateUserData) => {
   }
 };
 
+export const softDeleteUser = async (id: string) => {
+  try {
+    const result = await updateUser(id, { 
+      status: "deleted", 
+      deleted_at: new Date() 
+    });
+    return result;
+  } catch (error) {
+    throw new UserRepositoryError(`Failed to soft delete user: ${error}`);
+  }
+};
+
 export const findByForgotToken = async (token: string) => {
   try {
     if (!token || typeof token !== "string") {
@@ -129,7 +168,8 @@ export const findByForgotToken = async (token: string) => {
       .where(
         and(
           eq(users.forgot_password_token, token),
-          gt(users.forgot_password_expiry, new Date())
+          gt(users.forgot_password_expiry, new Date()),
+          ne(users.status, "deleted")
         )
       );
   } catch (error) {

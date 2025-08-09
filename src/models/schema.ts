@@ -10,7 +10,7 @@ import {
   jsonb,
   uniqueIndex
 } from "drizzle-orm/pg-core";
-import { experienceLevelEnum, userTypeEnum, verificationStatusEnum } from "../constants/users";
+import { experienceLevelEnum, userTypeEnum, verificationStatusEnum, userStatusEnum } from "../constants/users";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable(
@@ -22,12 +22,14 @@ export const users = pgTable(
     password: varchar("password", { length: 128 }).notNull(),
     user_type: userTypeEnum("user_type").notNull().default("buyer"),
     verification_status: verificationStatusEnum("verification_status").notNull().default("pending"),
+    status: userStatusEnum("status").notNull().default("active"),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
     last_login: timestamp("last_login").notNull().defaultNow(),
     email_verified: boolean("email_verified").notNull().default(false),
     forgot_password_token: varchar("forgot_password_token", { length: 128 }),
     forgot_password_expiry: timestamp("forgot_password_expiry"),
+    deleted_at: timestamp("deleted_at"),
   },
   (users) => {
     return {
@@ -44,11 +46,15 @@ export const users_dump = pgTable(
     total_sales: integer("total_sales").notNull().default(0),
     total_purchases: integer("total_purchases").notNull().default(0), 
     experience_level: experienceLevelEnum("experience_level").notNull().default("beginner"),
-    avatar: text("avatar").notNull(),
-    bio: text("bio").notNull(),
-    location: varchar("location", { length: 100 }).notNull(),
-    website: varchar("website", { length: 255 }).notNull(),
-    social_links: jsonb("social_links").notNull(),
+    avatar: text("avatar"),
+    bio: text("bio"),
+    location: varchar("location", { length: 100 }),
+    website: varchar("website", { length: 255 }),
+    social_links: jsonb("social_links"),
     skills: text("skills").array().notNull().default([]),
+    status: userStatusEnum("status").notNull().default("active"),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
+    deleted_at: timestamp("deleted_at"),
   }
 );

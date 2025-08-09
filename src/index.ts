@@ -4,12 +4,14 @@ import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { rootRoutes } from './routes/root.route';
 import { authUsersRoutes } from './routes/users.route';
+import { adminUsersRoutes } from './routes/admin-users.route';
+import { usersDumpRoutes } from './routes/users-dump.route';
 
 const app = new OpenAPIHono();
 
 app.use('*', cors({
   origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:5173', 'https://projxchange-frontend-v1.vercel.app'],
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
   maxAge: 600,
@@ -18,13 +20,15 @@ app.use('*', cors({
 
 rootRoutes(app);
 authUsersRoutes(app);
+adminUsersRoutes(app);
+usersDumpRoutes(app);
 
 app.doc('/doc', {
   openapi: '3.0.0',
   info: {
     title: 'ProjXChange API',
     version: '1.0.0',
-    description: 'API for ProjXChange platform with authentication',
+    description: 'API for ProjXChange platform',
   },
   servers: [
     {
