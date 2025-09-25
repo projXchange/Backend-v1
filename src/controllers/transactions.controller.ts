@@ -114,12 +114,12 @@ export const createTransactionHandler = async (c: any) => {
       user_id: userId,
       project_id,
       seller_id,
-      amount,
+      amount: amount.toString(), // Convert to string for decimal field
       currency: currency || "INR",
       payment_method,
       payment_gateway_response,
-      commission_amount: commissionAmount,
-      seller_amount: sellerAmount,
+      commission_amount: commissionAmount.toString(), // Convert to string for decimal field
+      seller_amount: sellerAmount.toString(), // Convert to string for decimal field
       metadata
     });
     

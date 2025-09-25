@@ -24,12 +24,12 @@ export interface CreateTransactionData {
   seller_id: string;
   type?: "purchase" | "refund" | "commission";
   status?: "pending" | "processing" | "completed" | "failed" | "cancelled" | "refunded";
-  amount: number;
+  amount: string; // decimal fields expect string values
   currency?: "INR" | "USD";
   payment_method?: string;
   payment_gateway_response?: any;
-  commission_amount?: number;
-  seller_amount?: number;
+  commission_amount?: string; // decimal fields expect string values
+  seller_amount?: string; // decimal fields expect string values
   metadata?: any;
 }
 

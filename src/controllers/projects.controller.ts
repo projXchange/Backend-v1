@@ -635,15 +635,15 @@ export const deleteProjectDumpHandler = async (c: any) => {
 
     // Clear dump fields
     const clearData = {
-      thumbnail: null,
+      thumbnail: undefined,
       images: [],
-      demo_video: null,
+      demo_video: undefined,
       features: [],
       tags: [],
-      files: null,
-      requirements: null,
-      stats: null,
-      rating: null
+      files: undefined,
+      requirements: undefined,
+      stats: undefined,
+      rating: undefined
     };
 
     await updateProject(id, clearData);

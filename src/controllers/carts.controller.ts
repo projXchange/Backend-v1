@@ -64,7 +64,7 @@ export const addToCartHandler = async (c: any) => {
     const [cartItem] = await addToCart({
       user_id: userId,
       project_id,
-      price_at_time: currentPrice,
+      price_at_time: currentPrice.toString(), // Convert to string for decimal field
       currency,
       quantity
     });

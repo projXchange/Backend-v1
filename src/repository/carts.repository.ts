@@ -13,14 +13,14 @@ class CartRepositoryError extends Error {
 export interface CreateCartItemData {
   user_id: string;
   project_id: string;
-  price_at_time: number;
+  price_at_time: string; // decimal fields expect string values
   currency?: "INR" | "USD";
   quantity?: number;
 }
 
 export interface UpdateCartItemData {
   quantity?: number;
-  price_at_time?: number;
+  price_at_time?: string; // decimal fields expect string values
 }
 
 export const findByUser = async (userId: string) => {
