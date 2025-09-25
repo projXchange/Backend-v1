@@ -35,6 +35,34 @@ export interface CreateProjectData {
   };
   delivery_time?: number;
   status?: "draft" | "pending_review" | "approved" | "published" | "suspended" | "archived";
+  // Dump fields
+  thumbnail?: string;
+  images?: string[];
+  demo_video?: string;
+  features?: string[];
+  tags?: string[];
+  files?: {
+    source_files?: string[];
+    documentation_files?: string[];
+    assets?: string[];
+    size_mb?: number;
+  };
+  requirements?: {
+    system_requirements?: string[];
+    dependencies?: string[];
+    installation_steps?: string[];
+  };
+  stats?: {
+    total_downloads?: number;
+    total_views?: number;
+    total_likes?: number;
+    completion_rate?: number;
+  };
+  rating?: {
+    average_rating?: number;
+    total_ratings?: number;
+    rating_distribution?: { [key: string]: number };
+  };
 }
 
 export interface UpdateProjectData {
@@ -59,6 +87,34 @@ export interface UpdateProjectData {
   purchase_count?: number;
   download_count?: number;
   buyers?: string[];
+  // Dump fields
+  thumbnail?: string;
+  images?: string[];
+  demo_video?: string;
+  features?: string[];
+  tags?: string[];
+  files?: {
+    source_files?: string[];
+    documentation_files?: string[];
+    assets?: string[];
+    size_mb?: number;
+  };
+  requirements?: {
+    system_requirements?: string[];
+    dependencies?: string[];
+    installation_steps?: string[];
+  };
+  stats?: {
+    total_downloads?: number;
+    total_views?: number;
+    total_likes?: number;
+    completion_rate?: number;
+  };
+  rating?: {
+    average_rating?: number;
+    total_ratings?: number;
+    rating_distribution?: { [key: string]: number };
+  };
 }
 
 export interface ProjectFilters {

@@ -21,6 +21,17 @@ export interface CreateUserData {
   password: string;
   full_name?: string;
   user_type?: "buyer" | "seller" | "admin" | "manager";
+  // Profile fields
+  rating?: number;
+  total_sales?: number;
+  total_purchases?: number;
+  experience_level?: "beginner" | "intermediate" | "expert";
+  avatar?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  social_links?: any;
+  skills?: string[];
 }
 
 export interface UpdateUserData {
@@ -35,6 +46,17 @@ export interface UpdateUserData {
   forgot_password_token?: string | null;
   forgot_password_expiry?: Date | null;
   deleted_at?: Date | null;
+  // Profile fields
+  rating?: number;
+  total_sales?: number;
+  total_purchases?: number;
+  experience_level?: "beginner" | "intermediate" | "expert";
+  avatar?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  social_links?: any;
+  skills?: string[];
 }
 
 export const findByEmail = async (email: string, includeDeleted = false) => {

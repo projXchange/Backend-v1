@@ -35,18 +35,7 @@ export const users = pgTable(
     forgot_password_token: varchar("forgot_password_token", { length: 128 }),
     forgot_password_expiry: timestamp("forgot_password_expiry"),
     deleted_at: timestamp("deleted_at"),
-  },
-  (users) => {
-    return {
-      email_idx: uniqueIndex("idx_users_email").on(users.email),
-    };
-  },
-);
-
-export const users_dump = pgTable(
-  "users_dump",
-  {
-    id: uuid("id").primaryKey().notNull().references(() => users.id),
+    // Profile fields (consolidated from users_dump)
     rating: real("rating").notNull().default(0),
     total_sales: integer("total_sales").notNull().default(0),
     total_purchases: integer("total_purchases").notNull().default(0), 
@@ -57,12 +46,14 @@ export const users_dump = pgTable(
     website: varchar("website", { length: 255 }),
     social_links: jsonb("social_links"),
     skills: text("skills").array().notNull().default([]),
-    status: userStatusEnum("status").notNull().default("active"),
-    created_at: timestamp("created_at").notNull().defaultNow(),
-    updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
-    deleted_at: timestamp("deleted_at"),
-  }
+  },
+  (users) => {
+    return {
+      email_idx: uniqueIndex("idx_users_email").on(users.email),
+    };
+  },
 );
+
 
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().notNull().default(sql`uuid_generate_v4()`),
@@ -90,19 +81,7 @@ export const projects = pgTable("projects", {
   download_count: integer("download_count").notNull().default(0),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
-}, (table) => {
-  return {
-    title_idx: index("idx_projects_title").on(table.title),
-    category_idx: index("idx_projects_category").on(table.category),
-    author_idx: index("idx_projects_author_id").on(table.author_id),
-    status_idx: index("idx_projects_status").on(table.status),
-    featured_idx: index("idx_projects_is_featured").on(table.is_featured),
-    created_at_idx: index("idx_projects_created_at").on(table.created_at),
-  };
-});
-
-export const projects_dump = pgTable("projects_dump", {
-  id: uuid("id").primaryKey().notNull().references(() => projects.id, { onDelete: "cascade" }),
+  // Dump fields (consolidated from projects_dump)
   thumbnail: text("thumbnail"),
   images: text("images").array().default([]),
   demo_video: text("demo_video"),
@@ -130,9 +109,17 @@ export const projects_dump = pgTable("projects_dump", {
     total_ratings?: number;
     rating_distribution?: { [key: string]: number };
   }>(),
-  created_at: timestamp("created_at").notNull().defaultNow(),
-  updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    title_idx: index("idx_projects_title").on(table.title),
+    category_idx: index("idx_projects_category").on(table.category),
+    author_idx: index("idx_projects_author_id").on(table.author_id),
+    status_idx: index("idx_projects_status").on(table.status),
+    featured_idx: index("idx_projects_is_featured").on(table.is_featured),
+    created_at_idx: index("idx_projects_created_at").on(table.created_at),
+  };
 });
+
 
 export const wishlists = pgTable("wishlists", {
   id: uuid("id").primaryKey().notNull().default(sql`uuid_generate_v4()`),

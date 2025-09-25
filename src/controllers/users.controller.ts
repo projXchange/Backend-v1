@@ -1,8 +1,9 @@
 import crypto from "crypto";
-import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists } from "../repository/users.repository";
+import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
 import { sendMail } from "../utils/email.utils";
+import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const signup = async (c: any) => {
   try {
@@ -132,4 +133,219 @@ export const resetPassword = async (c: any) => {
   const accessToken = generateAccessToken(user.id);
   const refreshToken = generateRefreshToken(user.id);
   return c.json({ user, accessToken, refreshToken });
+};
+
+// Profile management functions
+export const createUserProfile = async (c: any) => {
+  try {
+    const userId = c.get("userId");
+    const { 
+      rating, 
+      total_sales, 
+      total_purchases, 
+      experience_level, 
+      avatar, 
+      bio, 
+      location, 
+      website, 
+      social_links, 
+      skills 
+    } = await c.req.json();
+
+    let avatarUrl: string | undefined = undefined;
+    if (avatar) {
+      // Assuming avatar is base64 encoded
+      avatarUrl = await uploadImage(avatar, `users/${userId}`);
+    }
+
+    const profileData = {
+      rating: rating || 0,
+      total_sales: total_sales || 0,
+      total_purchases: total_purchases || 0,
+      experience_level: experience_level || "beginner",
+      avatar: avatarUrl,
+      bio: bio || "",
+      location: location || "",
+      website: website || "",
+      social_links: social_links || {},
+      skills: skills || []
+    };
+
+    const [updatedUser] = await updateUser(userId, profileData);
+    
+    return c.json({ 
+      message: "User profile created successfully", 
+      profile: updatedUser 
+    });
+  } catch (error: any) {
+    console.error("Create user profile error:", error);
+    return c.json({ 
+      error: error.message || "Failed to create user profile" 
+    }, 500);
+  }
+};
+
+export const updateUserProfile = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const userRole = c.get("user").user_type;
+
+    // Check if user is updating their own profile or is admin/manager
+    if (id !== userId && !["admin", "manager"].includes(userRole)) {
+      return c.json({ error: "Unauthorized to update this profile" }, 403);
+    }
+
+    const { 
+      rating, 
+      total_sales, 
+      total_purchases, 
+      experience_level, 
+      avatar, 
+      bio, 
+      location, 
+      website, 
+      social_links, 
+      skills 
+    } = await c.req.json();
+
+    // Get current user to handle avatar replacement
+    let currentUser = null;
+    try {
+      const result = await findById(id);
+      currentUser = result[0];
+    } catch (error) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const updateData: any = {};
+    
+    if (rating !== undefined) updateData.rating = rating;
+    if (total_sales !== undefined) updateData.total_sales = total_sales;
+    if (total_purchases !== undefined) updateData.total_purchases = total_purchases;
+    if (experience_level !== undefined) updateData.experience_level = experience_level;
+    if (bio !== undefined) updateData.bio = bio;
+    if (location !== undefined) updateData.location = location;
+    if (website !== undefined) updateData.website = website;
+    if (social_links !== undefined) updateData.social_links = social_links;
+    if (skills !== undefined) updateData.skills = skills;
+
+    // Handle avatar update
+    if (avatar) {
+      // Delete old avatar if exists
+      if (currentUser.avatar) {
+        await deleteImage(currentUser.avatar);
+      }
+      
+      // Upload new avatar
+      updateData.avatar = await uploadImage(avatar, `users/${id}`);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return c.json({ error: "No valid fields to update" }, 400);
+    }
+
+    const [updatedUser] = await updateUser(id, updateData);
+    
+    return c.json({ 
+      message: "User profile updated successfully", 
+      profile: updatedUser 
+    });
+  } catch (error: any) {
+    console.error("Update user profile error:", error);
+    return c.json({ 
+      error: error.message || "Failed to update user profile" 
+    }, 500);
+  }
+};
+
+export const getUserProfile = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+
+    const result = await findById(id);
+    const user = result[0];
+    
+    return c.json({ profile: user });
+  } catch (error: any) {
+    console.error("Get user profile error:", error);
+    return c.json({ 
+      error: error.message || "Failed to fetch user profile" 
+    }, 500);
+  }
+};
+
+export const getAllUserProfiles = async (c: any) => {
+  try {
+    const { include_deleted } = c.req.query();
+    const includeDeleted = include_deleted === "true";
+    
+    const users = await findAllUsers(includeDeleted);
+    
+    return c.json({ 
+      profiles: users,
+      total: users.length 
+    });
+  } catch (error: any) {
+    console.error("Get all user profiles error:", error);
+    return c.json({ 
+      error: error.message || "Failed to fetch user profiles" 
+    }, 500);
+  }
+};
+
+export const deleteUserProfile = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const userRole = c.get("user").user_type;
+
+    // Check if user is deleting their own profile or is admin/manager
+    if (id !== userId && !["admin", "manager"].includes(userRole)) {
+      return c.json({ error: "Unauthorized to delete this profile" }, 403);
+    }
+
+    // Get current user to delete avatar
+    try {
+      const result = await findById(id);
+      const currentUser = result[0];
+      
+      // Delete avatar from cloudinary
+      if (currentUser.avatar) {
+        await deleteImage(currentUser.avatar);
+      }
+    } catch (error) {
+      // User doesn't exist, continue with deletion attempt
+    }
+
+    await updateUser(id, { 
+      status: "deleted", 
+      deleted_at: new Date() 
+    });
+    
+    return c.json({ 
+      message: "User profile deleted successfully" 
+    });
+  } catch (error: any) {
+    console.error("Delete user profile error:", error);
+    return c.json({ 
+      error: error.message || "Failed to delete user profile" 
+    }, 500);
+  }
+};
+
+export const getMyProfile = async (c: any) => {
+  try {
+    const userId = c.get("userId");
+
+    const result = await findById(userId);
+    const user = result[0];
+    
+    return c.json({ profile: user });
+  } catch (error: any) {
+    console.error("Get my profile error:", error);
+    return c.json({ 
+      error: error.message || "Failed to fetch profile" 
+    }, 500);
+  }
 };

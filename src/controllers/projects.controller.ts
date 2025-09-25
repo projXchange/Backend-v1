@@ -11,6 +11,7 @@ import {
   addBuyer,
   checkUserPurchased
 } from "../repository/projects.repository";
+import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const createProjectHandler = async (c: any) => {
   try {
@@ -381,4 +382,280 @@ export const purchaseProject = async (c: any) => {
 function decrementProjectCount(category_id: any) {
   throw new Error("Function not implemented.");
 }
+
+// Dump management functions
+export const createProjectDumpHandler = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const user = c.get("user");
+
+    if (!id) {
+      return c.json({ error: "Project ID is required" }, 400);
+    }
+
+    // Verify project exists and user has permission
+    let project;
+    try {
+      const result = await findById(id);
+      project = result[0];
+    } catch (error) {
+      return c.json({ error: "Project not found" }, 404);
+    }
+
+    // Check if user owns the project or is admin/manager
+    if (project.author_id !== userId && !["admin", "manager"].includes(user.user_type)) {
+      return c.json({ error: "Unauthorized to create dump for this project" }, 403);
+    }
+
+    const { 
+      thumbnail, images, demo_video, features, tags, 
+      files, requirements, stats, rating 
+    } = await c.req.json();
+
+    // Handle image uploads
+    let thumbnailUrl = thumbnail;
+    if (thumbnail && thumbnail.startsWith('data:')) {
+      thumbnailUrl = await uploadImage(thumbnail, `projects/${id}/thumbnail`);
+    }
+
+    let uploadedImages = images || [];
+    if (images && Array.isArray(images)) {
+      uploadedImages = await Promise.all(
+        images.map(async (img: string, index: number) => {
+          if (img.startsWith('data:')) {
+            return await uploadImage(img, `projects/${id}/images/${index}`);
+          }
+          return img;
+        })
+      );
+    }
+
+    let videoUrl = demo_video;
+    if (demo_video && demo_video.startsWith('data:')) {
+      // For video upload, you might want to use a different service or Cloudinary video upload
+      videoUrl = await uploadImage(demo_video, `projects/${id}/videos`);
+    }
+
+    const dumpData = {
+      thumbnail: thumbnailUrl,
+      images: uploadedImages,
+      demo_video: videoUrl,
+      features: features || [],
+      tags: tags || [],
+      files,
+      requirements,
+      stats,
+      rating
+    };
+
+    const [updatedProject] = await updateProject(id, dumpData);
+    
+    return c.json({ 
+      message: "Project dump created successfully", 
+      project: updatedProject 
+    });
+  } catch (error: any) {
+    console.error("Create project dump error:", error);
+    return c.json({ 
+      error: error.message || "Failed to create project dump" 
+    }, 500);
+  }
+};
+
+export const updateProjectDumpHandler = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const user = c.get("user");
+
+    if (!id) {
+      return c.json({ error: "Project ID is required" }, 400);
+    }
+
+    // Verify project exists and user has permission
+    let project;
+    try {
+      const result = await findById(id);
+      project = result[0];
+    } catch (error) {
+      return c.json({ error: "Project not found" }, 404);
+    }
+
+    // Check if user owns the project or is admin/manager
+    if (project.author_id !== userId && !["admin", "manager"].includes(user.user_type)) {
+      return c.json({ error: "Unauthorized to update dump for this project" }, 403);
+    }
+
+    const updateData = await c.req.json();
+
+    // Handle thumbnail update
+    if (updateData.thumbnail && updateData.thumbnail.startsWith('data:')) {
+      // Delete old thumbnail
+      if (project.thumbnail && project.thumbnail.includes('cloudinary')) {
+        await deleteImage(project.thumbnail);
+      }
+      updateData.thumbnail = await uploadImage(updateData.thumbnail, `projects/${id}/thumbnail`);
+    }
+
+    // Handle images update
+    if (updateData.images && Array.isArray(updateData.images)) {
+      // Delete old images
+      if (project.images && Array.isArray(project.images)) {
+        await Promise.all(
+          project.images
+            .filter(img => img.includes('cloudinary'))
+            .map(img => deleteImage(img))
+        );
+      }
+
+      updateData.images = await Promise.all(
+        updateData.images.map(async (img: string, index: number) => {
+          if (img.startsWith('data:')) {
+            return await uploadImage(img, `projects/${id}/images/${index}`);
+          }
+          return img;
+        })
+      );
+    }
+
+    // Handle video update
+    if (updateData.demo_video && updateData.demo_video.startsWith('data:')) {
+      // Delete old video
+      if (project.demo_video && project.demo_video.includes('cloudinary')) {
+        await deleteImage(project.demo_video);
+      }
+      updateData.demo_video = await uploadImage(updateData.demo_video, `projects/${id}/videos`);
+    }
+
+    const [updatedProject] = await updateProject(id, updateData);
+    
+    return c.json({ 
+      message: "Project dump updated successfully", 
+      project: updatedProject 
+    });
+  } catch (error: any) {
+    console.error("Update project dump error:", error);
+    return c.json({ 
+      error: error.message || "Failed to update project dump" 
+    }, 500);
+  }
+};
+
+export const getProjectDumpById = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+
+    if (!id) {
+      return c.json({ error: "Project ID is required" }, 400);
+    }
+
+    const result = await findById(id);
+    const project = result[0];
+    
+    return c.json({ project });
+  } catch (error: any) {
+    console.error("Get project dump by ID error:", error);
+    return c.json({ 
+      error: error.message || "Failed to fetch project dump" 
+    }, 500);
+  }
+};
+
+export const getAllProjectDumps = async (c: any) => {
+  try {
+    const { include_deleted } = c.req.query();
+    const includeDeleted = include_deleted === "true";
+    
+    const filters = {
+      page: 1,
+      limit: 1000, // Get all projects
+      status: includeDeleted ? undefined : ["published"]
+    };
+    
+    const result = await findWithFilters(filters);
+    
+    return c.json({ 
+      projects: result.data,
+      total: result.data.length 
+    });
+  } catch (error: any) {
+    console.error("Get all project dumps error:", error);
+    return c.json({ 
+      error: error.message || "Failed to fetch project dumps" 
+    }, 500);
+  }
+};
+
+export const deleteProjectDumpHandler = async (c: any) => {
+  try {
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const user = c.get("user");
+
+    if (!id) {
+      return c.json({ error: "Project ID is required" }, 400);
+    }
+
+    // Verify project exists and user has permission
+    let project;
+    try {
+      const result = await findById(id);
+      project = result[0];
+    } catch (error) {
+      return c.json({ error: "Project not found" }, 404);
+    }
+
+    // Check if user owns the project or is admin/manager
+    if (project.author_id !== userId && !["admin", "manager"].includes(user.user_type)) {
+      return c.json({ error: "Unauthorized to delete dump for this project" }, 403);
+    }
+
+    // Get current project for cleanup
+    try {
+      // Delete associated media files
+      if (project.thumbnail && project.thumbnail.includes('cloudinary')) {
+        await deleteImage(project.thumbnail);
+      }
+      
+      if (project.images && Array.isArray(project.images)) {
+        await Promise.all(
+          project.images
+            .filter(img => img.includes('cloudinary'))
+            .map(img => deleteImage(img))
+        );
+      }
+      
+      if (project.demo_video && project.demo_video.includes('cloudinary')) {
+        await deleteImage(project.demo_video);
+      }
+    } catch (error) {
+      // Project doesn't exist, continue with deletion attempt
+    }
+
+    // Clear dump fields
+    const clearData = {
+      thumbnail: null,
+      images: [],
+      demo_video: null,
+      features: [],
+      tags: [],
+      files: null,
+      requirements: null,
+      stats: null,
+      rating: null
+    };
+
+    await updateProject(id, clearData);
+    
+    return c.json({ 
+      message: "Project dump deleted successfully" 
+    });
+  } catch (error: any) {
+    console.error("Delete project dump error:", error);
+    return c.json({ 
+      error: error.message || "Failed to delete project dump" 
+    }, 500);
+  }
+};
 

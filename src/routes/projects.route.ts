@@ -10,7 +10,12 @@ import {
   getFeaturedProjects,
   deleteProjectHandler,
   updateProjectStatus,
-  purchaseProject
+  purchaseProject,
+  createProjectDumpHandler,
+  updateProjectDumpHandler,
+  getProjectDumpById,
+  getAllProjectDumps,
+  deleteProjectDumpHandler
 } from '../controllers/projects.controller';
 import { isLoggedIn, requireManager, requireSeller } from '../middlewares/users.middlewares';
 
@@ -86,6 +91,91 @@ const ProjectsListResponse = z.object({
 
 const MessageResponse = z.object({
   message: z.string(),
+});
+
+// Dump schemas
+const FilesSchema = z.object({
+  source_files: z.array(z.string()).optional(),
+  documentation_files: z.array(z.string()).optional(),
+  assets: z.array(z.string()).optional(),
+  size_mb: z.number().optional(),
+});
+
+const RequirementsSchema = z.object({
+  system_requirements: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
+  installation_steps: z.array(z.string()).optional(),
+});
+
+const StatsSchema = z.object({
+  total_downloads: z.number().optional(),
+  total_views: z.number().optional(),
+  total_likes: z.number().optional(),
+  completion_rate: z.number().optional(),
+});
+
+const RatingSchema = z.object({
+  average_rating: z.number().optional(),
+  total_ratings: z.number().optional(),
+  rating_distribution: z.record(z.string(), z.number()).optional(),
+});
+
+const CreateProjectDumpRequest = z.object({
+  thumbnail: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  demo_video: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  files: FilesSchema.optional(),
+  requirements: RequirementsSchema.optional(),
+  stats: StatsSchema.optional(),
+  rating: RatingSchema.optional(),
+});
+
+const UpdateProjectDumpRequest = z.object({
+  thumbnail: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  demo_video: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  files: FilesSchema.optional(),
+  requirements: RequirementsSchema.optional(),
+  stats: StatsSchema.optional(),
+  rating: RatingSchema.optional(),
+});
+
+const ProjectDumpResponse = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  key_features: z.string().nullable(),
+  category: z.string(),
+  author_id: z.string(),
+  buyers: z.array(z.string()),
+  difficulty_level: z.string(),
+  tech_stack: z.array(z.string()),
+  github_url: z.string().nullable(),
+  demo_url: z.string().nullable(),
+  documentation: z.string().nullable(),
+  pricing: PricingSchema.nullable(),
+  delivery_time: z.number(),
+  status: z.string(),
+  is_featured: z.boolean(),
+  view_count: z.number(),
+  purchase_count: z.number(),
+  download_count: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  // Dump fields
+  thumbnail: z.string().nullable(),
+  images: z.array(z.string()),
+  demo_video: z.string().nullable(),
+  features: z.array(z.string()),
+  tags: z.array(z.string()),
+  files: FilesSchema.nullable(),
+  requirements: RequirementsSchema.nullable(),
+  stats: StatsSchema.nullable(),
+  rating: RatingSchema.nullable(),
 });
 
 const createProjectRoute = createRoute({
@@ -328,6 +418,136 @@ const purchaseProjectRoute = createRoute({
   tags: ['Projects'],
 });
 
+const createProjectDumpRoute = createRoute({
+  method: 'post',
+  path: '/projects/{id}/dump',
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateProjectDumpRequest,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Project dump created successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            message: z.string(),
+            project: ProjectDumpResponse,
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Project Dumps'],
+});
+
+const updateProjectDumpRoute = createRoute({
+  method: 'patch',
+  path: '/projects/{id}/dump',
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateProjectDumpRequest,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Project dump updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            message: z.string(),
+            project: ProjectDumpResponse,
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Project Dumps'],
+});
+
+const getProjectDumpByIdRoute = createRoute({
+  method: 'get',
+  path: '/projects/{id}/dump',
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Project dump fetched successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            project: ProjectDumpResponse,
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Project Dumps'],
+});
+
+const getAllProjectDumpsRoute = createRoute({
+  method: 'get',
+  path: '/admin/projects/dumps',
+  request: {
+    query: z.object({
+      include_deleted: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Project dumps fetched successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            projects: z.array(ProjectDumpResponse),
+            total: z.number(),
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Admin - Project Dumps'],
+});
+
+const deleteProjectDumpRoute = createRoute({
+  method: 'delete',
+  path: '/projects/{id}/dump',
+  request: {
+    params: z.object({
+      id: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Project dump deleted successfully',
+      content: {
+        'application/json': {
+          schema: MessageResponse,
+        },
+      },
+    },
+  },
+  tags: ['Project Dumps'],
+});
+
 export function projectsRoutes(app: OpenAPIHono) {
   // Public routes
   app.openapi(getProjectsWithFiltersRoute, getProjectsWithFilters);
@@ -346,7 +566,15 @@ export function projectsRoutes(app: OpenAPIHono) {
   app.openapi(deleteProjectRoute, deleteProjectHandler);
   app.openapi(purchaseProjectRoute, purchaseProject);
 
+  // Dump routes
+  app.use('/projects/*/dump', isLoggedIn);
+  app.openapi(createProjectDumpRoute, createProjectDumpHandler);
+  app.openapi(updateProjectDumpRoute, updateProjectDumpHandler);
+  app.openapi(getProjectDumpByIdRoute, getProjectDumpById);
+  app.openapi(deleteProjectDumpRoute, deleteProjectDumpHandler);
+
   // Admin routes
   app.use('/admin/projects/*', isLoggedIn, requireManager);
   app.openapi(updateProjectStatusRoute, updateProjectStatus);
+  app.openapi(getAllProjectDumpsRoute, getAllProjectDumps);
 }

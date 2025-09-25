@@ -4,11 +4,9 @@ import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { rootRoutes } from './routes/root.route';
-import { authUsersRoutes } from './routes/users.route';
+import { authUsersRoutes, usersRoutes } from './routes/users.route';
 import { adminUsersRoutes } from './routes/admin-users.route';
-import { usersDumpRoutes } from './routes/users-dump.route';
 import { projectsRoutes } from './routes/projects.route';
-import { projectsDumpRoutes } from './routes/projects-dump.route';
 import { wishlistRoutes } from './routes/wishlists.route';
 import { cartRoutes } from './routes/carts.route';
 import { reviewsRoutes } from './routes/reviews.route';
@@ -28,10 +26,9 @@ app.use('*', cors({
 
 rootRoutes(app);
 authUsersRoutes(app);
+usersRoutes(app);
 adminUsersRoutes(app);
-usersDumpRoutes(app);
 projectsRoutes(app);
-projectsDumpRoutes(app);
 wishlistRoutes(app);
 cartRoutes(app);
 reviewsRoutes(app);
