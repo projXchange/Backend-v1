@@ -10,12 +10,7 @@ import {
   getFeaturedProjects,
   deleteProjectHandler,
   updateProjectStatus,
-  purchaseProject,
-  createProjectDumpHandler,
-  updateProjectDumpHandler,
-  getProjectDumpById,
-  getAllProjectDumps,
-  deleteProjectDumpHandler
+  purchaseProject
 } from '../controllers/projects.controller';
 import { isLoggedIn, requireManager, requireSeller } from '../middlewares/users.middlewares';
 
@@ -23,74 +18,6 @@ const PricingSchema = z.object({
   sale_price: z.number(),
   original_price: z.number(),
   currency: z.enum(["INR", "USD"]),
-});
-
-const CreateProjectRequest = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().min(1),
-  key_features: z.string().optional(),
-  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
-  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
-  tech_stack: z.array(z.string()).optional(),
-  github_url: z.string().url().optional(),
-  demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
-  pricing: PricingSchema.optional(),
-  delivery_time: z.number().int().min(0).optional(),
-});
-
-const UpdateProjectRequest = z.object({
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().min(1).optional(),
-  key_features: z.string().optional(),
-  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
-  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
-  tech_stack: z.array(z.string()).optional(),
-  github_url: z.string().url().optional(),
-  demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
-  pricing: PricingSchema.optional(),
-  delivery_time: z.number().int().min(0).optional(),
-  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
-});
-
-const ProjectResponse = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string(),
-  key_features: z.string().nullable(),
-  category: z.string(),
-  author_id: z.string(),
-  buyers: z.array(z.string()),
-  difficulty_level: z.string(),
-  tech_stack: z.array(z.string()),
-  github_url: z.string().nullable(),
-  demo_url: z.string().nullable(),
-  documentation: z.string().nullable(),
-  pricing: PricingSchema.nullable(),
-  delivery_time: z.number(),
-  status: z.string(),
-  is_featured: z.boolean(),
-  view_count: z.number(),
-  purchase_count: z.number(),
-  download_count: z.number(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  discount_percentage: z.number().optional(),
-});
-
-const ProjectsListResponse = z.object({
-  data: z.array(ProjectResponse),
-  pagination: z.object({
-    page: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    pages: z.number(),
-  }),
-});
-
-const MessageResponse = z.object({
-  message: z.string(),
 });
 
 // Dump schemas
@@ -120,7 +47,19 @@ const RatingSchema = z.object({
   rating_distribution: z.record(z.string(), z.number()).optional(),
 });
 
-const CreateProjectDumpRequest = z.object({
+const CreateProjectRequest = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1),
+  key_features: z.string().optional(),
+  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
+  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+  tech_stack: z.array(z.string()).optional(),
+  github_url: z.string().url().optional(),
+  demo_url: z.string().url().optional(),
+  documentation: z.string().optional(),
+  pricing: PricingSchema.optional(),
+  delivery_time: z.number().int().min(0).optional(),
+  // Dump fields
   thumbnail: z.string().optional(),
   images: z.array(z.string()).optional(),
   demo_video: z.string().optional(),
@@ -132,7 +71,20 @@ const CreateProjectDumpRequest = z.object({
   rating: RatingSchema.optional(),
 });
 
-const UpdateProjectDumpRequest = z.object({
+const UpdateProjectRequest = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).optional(),
+  key_features: z.string().optional(),
+  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
+  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+  tech_stack: z.array(z.string()).optional(),
+  github_url: z.string().url().optional(),
+  demo_url: z.string().url().optional(),
+  documentation: z.string().optional(),
+  pricing: PricingSchema.optional(),
+  delivery_time: z.number().int().min(0).optional(),
+  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
+  // Dump fields
   thumbnail: z.string().optional(),
   images: z.array(z.string()).optional(),
   demo_video: z.string().optional(),
@@ -144,7 +96,7 @@ const UpdateProjectDumpRequest = z.object({
   rating: RatingSchema.optional(),
 });
 
-const ProjectDumpResponse = z.object({
+const ProjectResponse = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
@@ -166,6 +118,7 @@ const ProjectDumpResponse = z.object({
   download_count: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
+  discount_percentage: z.number().optional(),
   // Dump fields
   thumbnail: z.string().nullable(),
   images: z.array(z.string()),
@@ -177,6 +130,21 @@ const ProjectDumpResponse = z.object({
   stats: StatsSchema.nullable(),
   rating: RatingSchema.nullable(),
 });
+
+const ProjectsListResponse = z.object({
+  data: z.array(ProjectResponse),
+  pagination: z.object({
+    page: z.number(),
+    limit: z.number(),
+    total: z.number(),
+    pages: z.number(),
+  }),
+});
+
+const MessageResponse = z.object({
+  message: z.string(),
+});
+
 
 const createProjectRoute = createRoute({
   method: 'post',
@@ -418,135 +386,6 @@ const purchaseProjectRoute = createRoute({
   tags: ['Projects'],
 });
 
-const createProjectDumpRoute = createRoute({
-  method: 'post',
-  path: '/projects/{id}/dump',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-    body: {
-      content: {
-        'application/json': {
-          schema: CreateProjectDumpRequest,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: 'Project dump created successfully',
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-            project: ProjectDumpResponse,
-          }),
-        },
-      },
-    },
-  },
-  tags: ['Project Dumps'],
-});
-
-const updateProjectDumpRoute = createRoute({
-  method: 'patch',
-  path: '/projects/{id}/dump',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-    body: {
-      content: {
-        'application/json': {
-          schema: UpdateProjectDumpRequest,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: 'Project dump updated successfully',
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-            project: ProjectDumpResponse,
-          }),
-        },
-      },
-    },
-  },
-  tags: ['Project Dumps'],
-});
-
-const getProjectDumpByIdRoute = createRoute({
-  method: 'get',
-  path: '/projects/{id}/dump',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-  },
-  responses: {
-    200: {
-      description: 'Project dump fetched successfully',
-      content: {
-        'application/json': {
-          schema: z.object({
-            project: ProjectDumpResponse,
-          }),
-        },
-      },
-    },
-  },
-  tags: ['Project Dumps'],
-});
-
-const getAllProjectDumpsRoute = createRoute({
-  method: 'get',
-  path: '/admin/projects/dumps',
-  request: {
-    query: z.object({
-      include_deleted: z.string().optional(),
-    }),
-  },
-  responses: {
-    200: {
-      description: 'Project dumps fetched successfully',
-      content: {
-        'application/json': {
-          schema: z.object({
-            projects: z.array(ProjectDumpResponse),
-            total: z.number(),
-          }),
-        },
-      },
-    },
-  },
-  tags: ['Admin - Project Dumps'],
-});
-
-const deleteProjectDumpRoute = createRoute({
-  method: 'delete',
-  path: '/projects/{id}/dump',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-  },
-  responses: {
-    200: {
-      description: 'Project dump deleted successfully',
-      content: {
-        'application/json': {
-          schema: MessageResponse,
-        },
-      },
-    },
-  },
-  tags: ['Project Dumps'],
-});
 
 export function projectsRoutes(app: OpenAPIHono) {
   // Public routes
@@ -566,15 +405,7 @@ export function projectsRoutes(app: OpenAPIHono) {
   app.openapi(deleteProjectRoute, deleteProjectHandler);
   app.openapi(purchaseProjectRoute, purchaseProject);
 
-  // Dump routes
-  app.use('/projects/*/dump', isLoggedIn);
-  app.openapi(createProjectDumpRoute, createProjectDumpHandler);
-  app.openapi(updateProjectDumpRoute, updateProjectDumpHandler);
-  app.openapi(getProjectDumpByIdRoute, getProjectDumpById);
-  app.openapi(deleteProjectDumpRoute, deleteProjectDumpHandler);
-
   // Admin routes
   app.use('/admin/projects/*', isLoggedIn, requireManager);
   app.openapi(updateProjectStatusRoute, updateProjectStatus);
-  app.openapi(getAllProjectDumpsRoute, getAllProjectDumps);
 }
