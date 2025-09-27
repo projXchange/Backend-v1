@@ -14,6 +14,13 @@ import {
   getMyProfile
 } from '../controllers/users.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
+import {
+  trackUserSignup,
+  trackUserSignin,
+  trackUserLogout,
+  trackPasswordReset,
+  trackProfileCreation
+} from '../middlewares/posthog-tracking.middleware';
 
 const MessageResponse = z.object({
   message: z.string(),
@@ -365,10 +372,19 @@ const getMyProfileRoute = createRoute({
 });
 
 export function authUsersRoutes(app: OpenAPIHono) {
+  app.use('/auth/signup', trackUserSignup());
   app.openapi(signupRoute, signup);
+  
+  app.use('/auth/signin', trackUserSignin());
   app.openapi(signinRoute, signin);
+  
+  app.use('/auth/logout', trackUserLogout());
   app.openapi(logoutRoute, logout);
+  
+  app.use('/auth/forgot-password', trackPasswordReset());
   app.openapi(forgotPasswordRoute, forgotPassword);
+  
+  app.use('/auth/reset-password/*', trackPasswordReset());
   app.openapi(resetPasswordRoute, resetPassword);
 }
 
@@ -378,7 +394,10 @@ export function usersRoutes(app: OpenAPIHono) {
   app.use('/admin/users/profiles/*', isLoggedIn, requireManager);
   
   app.openapi(getMyProfileRoute, getMyProfile);        // /users/profile/me (specific)
+  
+  app.use('/users/profile', trackProfileCreation());
   app.openapi(createUserProfileRoute, createUserProfile); // /users/profile (base)
+  
   app.openapi(getUserProfileRoute, getUserProfile);    // /users/profile/{id} (parameterized)
   app.openapi(updateUserProfileRoute, updateUserProfile); // /users/profile/{id}
   app.openapi(deleteUserProfileRoute, deleteUserProfile); // /users/profile/{id}

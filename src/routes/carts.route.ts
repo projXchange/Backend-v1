@@ -10,6 +10,7 @@ import {
   checkCartStatus
 } from '../controllers/carts.controller';
 import { isLoggedIn } from '../middlewares/users.middlewares';
+import { trackCartAction } from '../middlewares/posthog-tracking.middleware';
 
 const MessageResponse = z.object({
   message: z.string(),
@@ -204,10 +205,24 @@ const checkCartStatusRoute = createRoute({
 export function cartRoutes(app: OpenAPIHono) {
   app.use('/cart/*', isLoggedIn);
   
+  // GET /cart - Get user cart
   app.openapi(getUserCartRoute, getUserCart);
+  
+  // POST /cart - Add to cart
+  app.use('/cart', trackCartAction('add'));
   app.openapi(addToCartRoute, addToCartHandler);
+  
+  // PATCH /cart/{project_id} - Update cart item
   app.openapi(updateCartItemRoute, updateCartItemHandler);
+  
+  // DELETE /cart/{project_id} - Remove from cart
+  app.use('/cart/:project_id', trackCartAction('remove'));
   app.openapi(removeFromCartRoute, removeFromCartHandler);
+  
+  // DELETE /cart - Clear cart (This middleware will also catch clear requests due to path overlap)
+  app.use('/cart', trackCartAction('clear'));
   app.openapi(clearCartRoute, clearCartHandler);
+  
+  // GET /cart/{project_id}/status - Check cart status
   app.openapi(checkCartStatusRoute, checkCartStatus);
 }

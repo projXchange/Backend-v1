@@ -4,6 +4,8 @@ import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { rateLimiter } from './middlewares/rate-limiter.middleware';
+import { initializePostHog, shutdownPostHog } from './config/posthog';
+import { posthogMiddleware } from './middlewares/posthog.middleware';
 import { rootRoutes } from './routes/root.route';
 import { authUsersRoutes, usersRoutes } from './routes/users.route';
 import { adminUsersRoutes } from './routes/admin-users.route';
@@ -15,6 +17,12 @@ import { transactionsRoutes } from './routes/transactions.route';
 import { downloadsRoutes } from './routes/downloads.route';
 
 const app = new OpenAPIHono();
+
+// Initialize PostHog
+initializePostHog();
+
+// PostHog middleware (should be early in the chain)
+app.use('*', posthogMiddleware());
 
 app.use('*', cors({
   origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:5173', 'https://projxchange-frontend-v1.vercel.app', '*'],
@@ -101,7 +109,22 @@ app.doc('/doc', {
 
 app.get('/api/doc', swaggerUI({ url: '/doc' }));
 
-serve({ fetch: app.fetch, port: 3000 }, (info) => {
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+// Graceful shutdown handler
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down server...');
+  await shutdownPostHog();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Shutting down server...');
+  await shutdownPostHog();
+  process.exit(0);
+});
+
+serve({ fetch: app.fetch, port }, (info) => {
   console.log(`🚀 ProjXChange API Server running on http://localhost:${info.port}`);
   console.log(`📚 API Documentation: http://localhost:${info.port}/api/doc`);
   console.log(`🔗 API Endpoint: http://localhost:${info.port}/doc`);
