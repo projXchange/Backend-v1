@@ -3,6 +3,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
+import { rateLimiter } from './middlewares/rate-limiter.middleware';
 import { rootRoutes } from './routes/root.route';
 import { authUsersRoutes, usersRoutes } from './routes/users.route';
 import { adminUsersRoutes } from './routes/admin-users.route';
@@ -22,6 +23,35 @@ app.use('*', cors({
   exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
   maxAge: 600,
   credentials: true,
+}));
+
+// Smart rate limiting based on route patterns
+app.use('*', rateLimiter({
+  identifier: (c) => {
+    const ip = c.req.header('x-forwarded-for') || 
+               c.req.header('x-real-ip') || 
+               'unknown';
+    const userId = c.get('userId') || 'anonymous';
+    return `${ip}:${userId}`;
+  },
+  type: (c) => {
+    const path = c.req.path;
+    
+    // Authentication routes - strictest limits
+    if (path.startsWith('/auth/')) return 'auth';
+    
+    // Admin routes - moderate limits
+    if (path.startsWith('/admin/')) return 'admin';
+    
+    // Upload/project creation routes - moderate limits
+    if (path.includes('/projects') && (c.req.method === 'POST' || c.req.method === 'PUT')) return 'upload';
+    
+    // Public browsing routes - most lenient
+    if (path.startsWith('/projects') && c.req.method === 'GET') return 'public';
+    
+    // Default to general rate limiting
+    return 'general';
+  }
 }));
 
 rootRoutes(app);
