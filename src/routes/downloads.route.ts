@@ -9,10 +9,6 @@ import {
 } from '../controllers/downloads.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
-const DownloadProjectRequest = z.object({
-  download_type: z.enum(["full", "demo", "preview"]).optional(),
-});
-
 const ProjectInDownloadResponse = z.object({
   id: z.string(),
   title: z.string(),
@@ -59,6 +55,11 @@ const getUserDownloadsRoute = createRoute({
     },
   },
   tags: ['Downloads'],
+});
+
+// 2. DOWNLOAD PROJECT - POST /projects/{project_id}/download
+const DownloadProjectRequest = z.object({
+  download_type: z.enum(["full", "demo", "preview"]).optional(),
 });
 
 const downloadProjectRoute = createRoute({

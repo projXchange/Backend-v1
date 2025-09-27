@@ -15,25 +15,11 @@ import {
 } from '../controllers/users.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
-const SignupRequest = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  full_name: z.string().optional(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
-const SigninRequest = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
-const ForgotPasswordRequest = z.object({
-  email: z.string().email(),
-});
-
-const ResetPasswordRequest = z.object({
-  password: z.string().min(6),
-});
-
+// ===== SHARED RESPONSE SCHEMAS =====
 const UserResponse = z.object({
   id: z.string(),
   email: z.string(),
@@ -49,23 +35,6 @@ const AuthResponse = z.object({
   user: UserResponse,
   accessToken: z.string(),
   refreshToken: z.string(),
-});
-
-const MessageResponse = z.object({
-  message: z.string(),
-});
-
-const UserProfileRequest = z.object({
-  rating: z.number().optional(),
-  total_sales: z.number().optional(),
-  total_purchases: z.number().optional(),
-  experience_level: z.enum(["beginner", "intermediate", "expert"]).optional(),
-  avatar: z.string().optional(), // base64 image
-  bio: z.string().optional(),
-  location: z.string().optional(),
-  website: z.string().optional(),
-  social_links: z.record(z.string(), z.string()).optional(),
-  skills: z.array(z.string()).optional(),
 });
 
 const UserProfileResponse = z.object({
@@ -95,6 +64,15 @@ const ProfilesListResponse = z.object({
   total: z.number(),
 });
 
+// ===== ROUTE DEFINITIONS =====
+
+// 1. SIGNUP - POST /auth/signup
+const SignupRequest = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  full_name: z.string().optional(),
+});
+
 const signupRoute = createRoute({
   method: 'post',
   path: '/auth/signup',
@@ -118,6 +96,12 @@ const signupRoute = createRoute({
     },
   },
   tags: ['Authentication'],
+});
+
+// 2. SIGNIN - POST /auth/signin
+const SigninRequest = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
 const signinRoute = createRoute({
@@ -161,6 +145,11 @@ const logoutRoute = createRoute({
   tags: ['Authentication'],
 });
 
+// 4. FORGOT PASSWORD - POST /auth/forgot-password
+const ForgotPasswordRequest = z.object({
+  email: z.string().email(),
+});
+
 const forgotPasswordRoute = createRoute({
   method: 'post',
   path: '/auth/forgot-password',
@@ -184,6 +173,11 @@ const forgotPasswordRoute = createRoute({
     },
   },
   tags: ['Authentication'],
+});
+
+// 5. RESET PASSWORD - POST /auth/reset-password/{token}
+const ResetPasswordRequest = z.object({
+  password: z.string().min(6),
 });
 
 const resetPasswordRoute = createRoute({
@@ -212,6 +206,20 @@ const resetPasswordRoute = createRoute({
     },
   },
   tags: ['Authentication'],
+});
+
+// 7. CREATE USER PROFILE - POST /users/profile
+const UserProfileRequest = z.object({
+  rating: z.number().optional(),
+  total_sales: z.number().optional(),
+  total_purchases: z.number().optional(),
+  experience_level: z.enum(["beginner", "intermediate", "expert"]).optional(),
+  avatar: z.string().optional(), // base64 image
+  bio: z.string().optional(),
+  location: z.string().optional(),
+  website: z.string().optional(),
+  social_links: z.record(z.string(), z.string()).optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 const createUserProfileRoute = createRoute({

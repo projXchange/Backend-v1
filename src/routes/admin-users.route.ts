@@ -8,11 +8,11 @@ import {
 } from '../controllers/admin-users.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
-const UpdateUserStatusRequest = z.object({
-  verification_status: z.enum(["pending", "verified", "rejected"]).optional(),
-  email_verified: z.boolean().optional(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
+// ===== SHARED RESPONSE SCHEMAS =====
 const UserResponse = z.object({
   id: z.string(),
   email: z.string(),
@@ -30,8 +30,12 @@ const UsersListResponse = z.object({
   total: z.number(),
 });
 
-const MessageResponse = z.object({
-  message: z.string(),
+// ===== ROUTE DEFINITIONS =====
+
+// 1. UPDATE USER STATUS - PATCH /admin/users/{id}/status
+const UpdateUserStatusRequest = z.object({
+  verification_status: z.enum(["pending", "verified", "rejected"]).optional(),
+  email_verified: z.boolean().optional(),
 });
 
 const updateUserStatusRoute = createRoute({

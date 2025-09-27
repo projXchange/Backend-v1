@@ -35,7 +35,6 @@ export const users = pgTable(
     forgot_password_token: varchar("forgot_password_token", { length: 128 }),
     forgot_password_expiry: timestamp("forgot_password_expiry"),
     deleted_at: timestamp("deleted_at"),
-    // Profile fields (consolidated from users_dump)
     rating: real("rating").notNull().default(0),
     total_sales: integer("total_sales").notNull().default(0),
     total_purchases: integer("total_purchases").notNull().default(0), 
@@ -81,7 +80,6 @@ export const projects = pgTable("projects", {
   download_count: integer("download_count").notNull().default(0),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
-  // Dump fields (consolidated from projects_dump)
   thumbnail: text("thumbnail"),
   images: text("images").array().default([]),
   demo_video: text("demo_video"),

@@ -12,18 +12,11 @@ import {
 } from '../controllers/reviews.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
-const CreateReviewRequest = z.object({
-  project_id: z.string().uuid(),
-  rating: z.number().int().min(1).max(5),
-  review_text: z.string().optional(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
-const UpdateReviewRequest = z.object({
-  rating: z.number().int().min(1).max(5).optional(),
-  review_text: z.string().optional(),
-  is_approved: z.boolean().optional(),
-});
-
+// ===== SHARED RESPONSE SCHEMAS =====
 const UserInReviewResponse = z.object({
   id: z.string(),
   full_name: z.string().nullable(),
@@ -51,10 +44,9 @@ const RatingStatsResponse = z.object({
   rating_1: z.number(),
 });
 
-const MessageResponse = z.object({
-  message: z.string(),
-});
+// ===== ROUTE DEFINITIONS =====
 
+// 1. GET PROJECT REVIEWS - GET /projects/{project_id}/reviews
 const getProjectReviewsRoute = createRoute({
   method: 'get',
   path: '/projects/{project_id}/reviews',
@@ -81,6 +73,7 @@ const getProjectReviewsRoute = createRoute({
   tags: ['Reviews'],
 });
 
+// 2. GET MY REVIEWS - GET /reviews/my
 const getUserReviewsRoute = createRoute({
   method: 'get',
   path: '/reviews/my',
@@ -98,6 +91,13 @@ const getUserReviewsRoute = createRoute({
     },
   },
   tags: ['Reviews'],
+});
+
+// 3. CREATE REVIEW - POST /reviews
+const CreateReviewRequest = z.object({
+  project_id: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  review_text: z.string().optional(),
 });
 
 const createReviewRoute = createRoute({
@@ -126,6 +126,13 @@ const createReviewRoute = createRoute({
     },
   },
   tags: ['Reviews'],
+});
+
+// 4. UPDATE REVIEW - PATCH /reviews/{id}
+const UpdateReviewRequest = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  review_text: z.string().optional(),
+  is_approved: z.boolean().optional(),
 });
 
 const updateReviewRoute = createRoute({
@@ -159,6 +166,7 @@ const updateReviewRoute = createRoute({
   tags: ['Reviews'],
 });
 
+// 5. DELETE REVIEW - DELETE /reviews/{id}
 const deleteReviewRoute = createRoute({
   method: 'delete',
   path: '/reviews/{id}',
@@ -180,6 +188,7 @@ const deleteReviewRoute = createRoute({
   tags: ['Reviews'],
 });
 
+// 6. GET PROJECT RATING STATS - GET /projects/{project_id}/ratings
 const getProjectRatingStatsRoute = createRoute({
   method: 'get',
   path: '/projects/{project_id}/ratings',
@@ -204,6 +213,7 @@ const getProjectRatingStatsRoute = createRoute({
   tags: ['Reviews'],
 });
 
+// 7. GET PENDING REVIEWS (ADMIN) - GET /admin/reviews/pending
 const getPendingReviewsRoute = createRoute({
   method: 'get',
   path: '/admin/reviews/pending',
@@ -224,18 +234,31 @@ const getPendingReviewsRoute = createRoute({
 });
 
 export function reviewsRoutes(app: OpenAPIHono) {
-  // Public routes
+  // ===== PUBLIC ROUTES (No Authentication Required) =====
+  // GET /projects/{project_id}/reviews - Get project reviews
   app.openapi(getProjectReviewsRoute, getProjectReviews);
+  
+  // GET /projects/{project_id}/ratings - Get project rating stats
   app.openapi(getProjectRatingStatsRoute, getProjectRatingStatsHandler);
 
-  // Protected routes
-  app.use('/reviews/*', isLoggedIn);
+  // ===== PROTECTED ROUTES (Authentication Required) =====
+  // GET /reviews/my - Get my reviews
+  app.use('/reviews/my', isLoggedIn);
   app.openapi(getUserReviewsRoute, getUserReviews);
+  
+  // POST /reviews - Create new review
+  app.use('/reviews', isLoggedIn);
   app.openapi(createReviewRoute, createReviewHandler);
+  
+  // PATCH /reviews/{id} - Update review
+  app.use('/reviews/*', isLoggedIn);
   app.openapi(updateReviewRoute, updateReviewHandler);
+  
+  // DELETE /reviews/{id} - Delete review
   app.openapi(deleteReviewRoute, deleteReviewHandler);
 
-  // Admin routes
+  // ===== ADMIN ROUTES (Admin/Manager Only) =====
+  // GET /admin/reviews/pending - Get pending reviews for moderation
   app.use('/admin/reviews/*', isLoggedIn, requireManager);
   app.openapi(getPendingReviewsRoute, getPendingReviewsHandler);
 }

@@ -11,15 +11,11 @@ import {
 } from '../controllers/carts.controller';
 import { isLoggedIn } from '../middlewares/users.middlewares';
 
-const AddToCartRequest = z.object({
-  project_id: z.string().uuid(),
-  quantity: z.number().int().min(1).max(10).optional(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
-const UpdateCartItemRequest = z.object({
-  quantity: z.number().int().min(1).max(10),
-});
-
+// ===== SHARED RESPONSE SCHEMAS =====
 const ProjectInCartResponse = z.object({
   id: z.string(),
   title: z.string(),
@@ -57,9 +53,7 @@ const CartResponse = z.object({
   total_items: z.number(),
 });
 
-const MessageResponse = z.object({
-  message: z.string(),
-});
+// ===== ROUTE DEFINITIONS =====
 
 const getUserCartRoute = createRoute({
   method: 'get',
@@ -75,6 +69,12 @@ const getUserCartRoute = createRoute({
     },
   },
   tags: ['Cart'],
+});
+
+// 2. ADD TO CART - POST /cart
+const AddToCartRequest = z.object({
+  project_id: z.string().uuid(),
+  quantity: z.number().int().min(1).max(10).optional(),
 });
 
 const addToCartRoute = createRoute({
@@ -103,6 +103,11 @@ const addToCartRoute = createRoute({
     },
   },
   tags: ['Cart'],
+});
+
+// 3. UPDATE CART ITEM - PATCH /cart/{project_id}
+const UpdateCartItemRequest = z.object({
+  quantity: z.number().int().min(1).max(10),
 });
 
 const updateCartItemRoute = createRoute({

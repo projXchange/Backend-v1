@@ -10,10 +10,11 @@ import {
 } from '../controllers/wishlists.controller';
 import { isLoggedIn } from '../middlewares/users.middlewares';
 
-const AddToWishlistRequest = z.object({
-  project_id: z.string().uuid(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
+// ===== SHARED RESPONSE SCHEMAS =====
 const ProjectInWishlistResponse = z.object({
   id: z.string(),
   title: z.string(),
@@ -42,9 +43,7 @@ const WishlistResponse = z.object({
   total: z.number(),
 });
 
-const MessageResponse = z.object({
-  message: z.string(),
-});
+// ===== ROUTE DEFINITIONS =====
 
 const getUserWishlistRoute = createRoute({
   method: 'get',
@@ -60,6 +59,11 @@ const getUserWishlistRoute = createRoute({
     },
   },
   tags: ['Wishlist'],
+});
+
+// 2. ADD TO WISHLIST - POST /wishlist
+const AddToWishlistRequest = z.object({
+  project_id: z.string().uuid(),
 });
 
 const addToWishlistRoute = createRoute({

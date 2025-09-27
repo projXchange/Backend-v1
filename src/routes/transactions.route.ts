@@ -12,23 +12,6 @@ import {
 } from '../controllers/transactions.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
-const CreateTransactionRequest = z.object({
-  transaction_id: z.string(),
-  project_id: z.string().uuid(),
-  seller_id: z.string().uuid(),
-  amount: z.number(),
-  currency: z.enum(["INR", "USD"]).optional(),
-  payment_method: z.string().optional(),
-  payment_gateway_response: z.any().optional(),
-  metadata: z.any().optional(),
-});
-
-const UpdateTransactionRequest = z.object({
-  status: z.enum(["pending", "processing", "completed", "failed", "cancelled", "refunded"]).optional(),
-  payment_gateway_response: z.any().optional(),
-  metadata: z.any().optional(),
-});
-
 const ProjectInTransactionResponse = z.object({
   id: z.string(),
   title: z.string(),
@@ -152,6 +135,18 @@ const getTransactionByIdRoute = createRoute({
   tags: ['Transactions'],
 });
 
+// 4. CREATE TRANSACTION - POST /transactions
+const CreateTransactionRequest = z.object({
+  transaction_id: z.string(),
+  project_id: z.string().uuid(),
+  seller_id: z.string().uuid(),
+  amount: z.number(),
+  currency: z.enum(["INR", "USD"]).optional(),
+  payment_method: z.string().optional(),
+  payment_gateway_response: z.any().optional(),
+  metadata: z.any().optional(),
+});
+
 const createTransactionRoute = createRoute({
   method: 'post',
   path: '/transactions',
@@ -178,6 +173,13 @@ const createTransactionRoute = createRoute({
     },
   },
   tags: ['Transactions'],
+});
+
+// 5. UPDATE TRANSACTION STATUS - PATCH /admin/transactions/{id}/status
+const UpdateTransactionRequest = z.object({
+  status: z.enum(["pending", "processing", "completed", "failed", "cancelled", "refunded"]).optional(),
+  payment_gateway_response: z.any().optional(),
+  metadata: z.any().optional(),
 });
 
 const updateTransactionStatusRoute = createRoute({

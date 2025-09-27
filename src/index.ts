@@ -58,10 +58,10 @@ rootRoutes(app);
 authUsersRoutes(app);
 usersRoutes(app);
 adminUsersRoutes(app);
+reviewsRoutes(app);  // Move reviews before projects to avoid /projects/* middleware conflict
 projectsRoutes(app);
 wishlistRoutes(app);
 cartRoutes(app);
-reviewsRoutes(app);
 transactionsRoutes(app);
 downloadsRoutes(app);
 

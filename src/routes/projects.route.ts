@@ -14,13 +14,13 @@ import {
 } from '../controllers/projects.controller';
 import { isLoggedIn, requireManager, requireSeller } from '../middlewares/users.middlewares';
 
+// ===== SHARED SCHEMAS =====
 const PricingSchema = z.object({
   sale_price: z.number(),
   original_price: z.number(),
   currency: z.enum(["INR", "USD"]),
 });
 
-// Dump schemas
 const FilesSchema = z.object({
   source_files: z.array(z.string()).optional(),
   documentation_files: z.array(z.string()).optional(),
@@ -47,55 +47,11 @@ const RatingSchema = z.object({
   rating_distribution: z.record(z.string(), z.number()).optional(),
 });
 
-const CreateProjectRequest = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().min(1),
-  key_features: z.string().optional(),
-  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
-  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
-  tech_stack: z.array(z.string()).optional(),
-  github_url: z.string().url().optional(),
-  demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
-  pricing: PricingSchema.optional(),
-  delivery_time: z.number().int().min(0).optional(),
-  // Dump fields
-  thumbnail: z.string().optional(),
-  images: z.array(z.string()).optional(),
-  demo_video: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  files: FilesSchema.optional(),
-  requirements: RequirementsSchema.optional(),
-  stats: StatsSchema.optional(),
-  rating: RatingSchema.optional(),
+const MessageResponse = z.object({
+  message: z.string(),
 });
 
-const UpdateProjectRequest = z.object({
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().min(1).optional(),
-  key_features: z.string().optional(),
-  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
-  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
-  tech_stack: z.array(z.string()).optional(),
-  github_url: z.string().url().optional(),
-  demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
-  pricing: PricingSchema.optional(),
-  delivery_time: z.number().int().min(0).optional(),
-  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
-  // Dump fields
-  thumbnail: z.string().optional(),
-  images: z.array(z.string()).optional(),
-  demo_video: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  files: FilesSchema.optional(),
-  requirements: RequirementsSchema.optional(),
-  stats: StatsSchema.optional(),
-  rating: RatingSchema.optional(),
-});
-
+// ===== SHARED RESPONSE SCHEMAS =====
 const ProjectResponse = z.object({
   id: z.string(),
   title: z.string(),
@@ -141,10 +97,32 @@ const ProjectsListResponse = z.object({
   }),
 });
 
-const MessageResponse = z.object({
-  message: z.string(),
-});
+// ===== ROUTE DEFINITIONS =====
 
+// 1. CREATE PROJECT - POST /projects
+const CreateProjectRequest = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1),
+  key_features: z.string().optional(),
+  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
+  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+  tech_stack: z.array(z.string()).optional(),
+  github_url: z.string().url().optional(),
+  demo_url: z.string().url().optional(),
+  documentation: z.string().optional(),
+  pricing: PricingSchema.optional(),
+  delivery_time: z.number().int().min(0).optional(),
+  // Dump fields
+  thumbnail: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  demo_video: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  files: FilesSchema.optional(),
+  requirements: RequirementsSchema.optional(),
+  stats: StatsSchema.optional(),
+  rating: RatingSchema.optional(),
+});
 
 const createProjectRoute = createRoute({
   method: 'post',
@@ -172,6 +150,32 @@ const createProjectRoute = createRoute({
     },
   },
   tags: ['Projects'],
+});
+
+// 2. UPDATE PROJECT - PATCH /projects/{id}
+const UpdateProjectRequest = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).optional(),
+  key_features: z.string().optional(),
+  category: z.enum(["web_development", "mobile_development", "desktop_application", "ai_machine_learning", "blockchain", "game_development", "data_science", "devops", "api_backend", "automation_scripts", "ui_ux_design", "other"]).optional(),
+  difficulty_level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+  tech_stack: z.array(z.string()).optional(),
+  github_url: z.string().url().optional(),
+  demo_url: z.string().url().optional(),
+  documentation: z.string().optional(),
+  pricing: PricingSchema.optional(),
+  delivery_time: z.number().int().min(0).optional(),
+  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
+  // Dump fields
+  thumbnail: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  demo_video: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  files: FilesSchema.optional(),
+  requirements: RequirementsSchema.optional(),
+  stats: StatsSchema.optional(),
+  rating: RatingSchema.optional(),
 });
 
 const updateProjectRoute = createRoute({
@@ -205,6 +209,7 @@ const updateProjectRoute = createRoute({
   tags: ['Projects'],
 });
 
+// 3. GET PROJECT BY ID - GET /projects/{id}
 const getProjectByIdRoute = createRoute({
   method: 'get',
   path: '/projects/{id}',
@@ -233,6 +238,7 @@ const getProjectByIdRoute = createRoute({
   tags: ['Projects'],
 });
 
+// 4. GET PROJECTS WITH FILTERS - GET /projects
 const getProjectsWithFiltersRoute = createRoute({
   method: 'get',
   path: '/projects',
@@ -267,6 +273,7 @@ const getProjectsWithFiltersRoute = createRoute({
   tags: ['Projects'],
 });
 
+// 5. GET MY PROJECTS - GET /projects/my
 const getMyProjectsRoute = createRoute({
   method: 'get',
   path: '/projects/my',
@@ -286,6 +293,7 @@ const getMyProjectsRoute = createRoute({
   tags: ['Projects'],
 });
 
+// 6. GET FEATURED PROJECTS - GET /projects/featured
 const getFeaturedProjectsRoute = createRoute({
   method: 'get',
   path: '/projects/featured',
@@ -310,6 +318,7 @@ const getFeaturedProjectsRoute = createRoute({
   tags: ['Projects'],
 });
 
+// 7. DELETE PROJECT - DELETE /projects/{id}
 const deleteProjectRoute = createRoute({
   method: 'delete',
   path: '/projects/{id}',
@@ -329,6 +338,11 @@ const deleteProjectRoute = createRoute({
     },
   },
   tags: ['Projects'],
+});
+
+// 8. UPDATE PROJECT STATUS (ADMIN) - PATCH /admin/projects/{id}/status
+const UpdateProjectStatusRequest = z.object({
+  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]),
 });
 
 const updateProjectStatusRoute = createRoute({
@@ -365,6 +379,7 @@ const updateProjectStatusRoute = createRoute({
   tags: ['Admin - Projects'],
 });
 
+// 9. PURCHASE PROJECT - POST /projects/{id}/purchase
 const purchaseProjectRoute = createRoute({
   method: 'post',
   path: '/projects/{id}/purchase',
@@ -388,24 +403,37 @@ const purchaseProjectRoute = createRoute({
 
 
 export function projectsRoutes(app: OpenAPIHono) {
-  // Public routes
+  // ===== PUBLIC ROUTES (No Authentication Required) =====
+  // GET /projects - List all projects with filters
   app.openapi(getProjectsWithFiltersRoute, getProjectsWithFilters);
+  
+  // GET /projects/{id} - Get project by ID
   app.openapi(getProjectByIdRoute, getProjectById);
+  
+  // GET /projects/featured - Get featured projects
   app.openapi(getFeaturedProjectsRoute, getFeaturedProjects);
 
-  // Protected routes for sellers
+  // ===== PROTECTED ROUTES (Authentication Required) =====
+  // GET /projects/my - Get my projects (Seller only)
   app.use('/projects/my', isLoggedIn, requireSeller);
   app.openapi(getMyProjectsRoute, getMyProjects);
   
+  // POST /projects - Create new project (Seller only)
   app.use('/projects', isLoggedIn, requireSeller);
   app.openapi(createProjectRoute, createProjectHandler);
   
+  // PUT /projects/{id} - Update project (Authenticated users)
   app.use('/projects/*', isLoggedIn);
   app.openapi(updateProjectRoute, updateProjectHandler);
+  
+  // DELETE /projects/{id} - Delete project (Authenticated users)
   app.openapi(deleteProjectRoute, deleteProjectHandler);
+  
+  // POST /projects/{id}/purchase - Purchase project (Authenticated users)
   app.openapi(purchaseProjectRoute, purchaseProject);
 
-  // Admin routes
+  // ===== ADMIN ROUTES (Admin/Manager Only) =====
+  // PUT /admin/projects/{id}/status - Update project status (Admin/Manager only)
   app.use('/admin/projects/*', isLoggedIn, requireManager);
   app.openapi(updateProjectStatusRoute, updateProjectStatus);
 }
