@@ -15,6 +15,7 @@ import { cartRoutes } from './routes/carts.route';
 import { reviewsRoutes } from './routes/reviews.route';
 import { transactionsRoutes } from './routes/transactions.route';
 import { downloadsRoutes } from './routes/downloads.route';
+import { emailTestRoutes } from './routes/email-test.route';
 
 const app = new OpenAPIHono();
 
@@ -72,6 +73,7 @@ wishlistRoutes(app);
 cartRoutes(app);
 transactionsRoutes(app);
 downloadsRoutes(app);
+emailTestRoutes(app);
 
 app.doc('/doc', {
   openapi: '3.0.0',
@@ -104,6 +106,7 @@ app.doc('/doc', {
     { name: 'Admin - Projects', description: 'Admin operations for projects' },
     { name: 'Admin - Reviews', description: 'Admin review moderation' },
     { name: 'Admin - Transactions', description: 'Admin transaction management' },
+    { name: 'Admin - Email', description: 'Email service testing and status' },
   ],
 });
 

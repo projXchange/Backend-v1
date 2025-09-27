@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
-import { sendMail } from "../utils/email.utils";
+import { sendPasswordResetEmail, sendPasswordResetConfirmation, sendWelcomeEmail } from "../utils/email.service";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const signup = async (c: any) => {
@@ -42,6 +42,17 @@ export const signup = async (c: any) => {
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
+    
+    // Send welcome email (optional - don't fail if it doesn't work)
+    try {
+      await sendWelcomeEmail(
+        newUser.email,
+        newUser.full_name || newUser.email.split('@')[0]
+      );
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the signup if email fails
+    }
     
     return c.json({ 
       user: userResponse, 
@@ -92,47 +103,135 @@ export const logout = async (c: any) => {
 };
 
 export const forgotPassword = async (c: any) => {
-  const { email } = await c.req.json();
-  if (!email) return c.json({ error: "Email required" }, 400);
+  try {
+    const { email } = await c.req.json();
+    if (!email) {
+      return c.json({ error: "Email is required" }, 400);
+    }
 
-  // Could rate-limit on IP/email here
-  const usersFound = await findByEmail(email);
-  if (!usersFound.length) return c.json({ message: "If this email exists, a reset link will be sent." });
+    // Validate email format
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return c.json({ error: "Invalid email format" }, 400);
+    }
 
-  const user = usersFound[0];
+    // Find user by email
+    const usersFound = await findByEmail(email);
+    if (!usersFound.length) {
+      // Return success message even if email doesn't exist (security best practice)
+      return c.json({ 
+        message: "If an account with that email exists, we've sent a password reset link to it." 
+      });
+    }
 
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
-  const expiry = new Date(Date.now() + (parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "20", 10)) * 60 * 1000);
+    const user = usersFound[0];
 
-  await updateUser(user.id, { forgot_password_token: hashed, forgot_password_expiry: expiry });
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    
+    // Set expiry (default 1 hour)
+    const expiryMinutes = parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "60", 10);
+    const expiry = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-  const resetUrl = `http://yourfrontend/reset-password/${resetToken}`;
-  await sendMail(user.email, "Password reset", `Reset password: ${resetUrl}`);
+    // Save hashed token to database
+    await updateUser(user.id, { 
+      forgot_password_token: hashedToken, 
+      forgot_password_expiry: expiry 
+    });
 
-  return c.json({ message: "If this email exists, a reset link will be sent." });
+    // Send password reset email
+    const emailSent = await sendPasswordResetEmail(
+      user.email, 
+      resetToken, // Send unhashed token to user
+      user.full_name || user.email.split('@')[0]
+    );
+
+    if (!emailSent) {
+      console.error('Failed to send password reset email to:', user.email);
+      // Still return success for security reasons
+    }
+
+    return c.json({ 
+      message: "If an account with that email exists, we've sent a password reset link to it." 
+    });
+  } catch (error: any) {
+    console.error("Forgot password error:", error);
+    return c.json({ 
+      error: "An error occurred while processing your request. Please try again." 
+    }, 500);
+  }
 };
 
 export const resetPassword = async (c: any) => {
-  const { token } = c.req.param();
-  const { password } = await c.req.json();
-  if (!password || password.length < 8) return c.json({ error: "Password must be at least 8 characters" }, 400);
+  try {
+    const { token } = c.req.param();
+    const { password } = await c.req.json();
+    
+    // Validate required fields
+    if (!token) {
+      return c.json({ error: "Reset token is required" }, 400);
+    }
+    
+    if (!password) {
+      return c.json({ error: "New password is required" }, 400);
+    }
+    
+    // Validate password strength
+    if (password.length < 8) {
+      return c.json({ error: "Password must be at least 8 characters long" }, 400);
+    }
 
-  const hashed = crypto.createHash("sha256").update(token).digest("hex");
-  const usersFound = await findByForgotToken(hashed);
-  if (!usersFound.length) return c.json({ error: "Invalid or expired token" }, 400);
+    // Hash the token to match stored version
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    
+    // Find user by token
+    const usersFound = await findByForgotToken(hashedToken);
+    if (!usersFound.length) {
+      return c.json({ error: "Invalid or expired reset token" }, 400);
+    }
 
-  const user = usersFound[0];
-  if (user.forgot_password_expiry && user.forgot_password_expiry < new Date()) {
-    return c.json({ error: "Token expired" }, 400);
+    const user = usersFound[0];
+    
+    // Check if token has expired
+    if (user.forgot_password_expiry && user.forgot_password_expiry < new Date()) {
+      return c.json({ error: "Reset token has expired. Please request a new password reset." }, 400);
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(password);
+    
+    // Update user with new password and clear reset token
+    await updateUser(user.id, { 
+      password: hashedPassword, 
+      forgot_password_token: null, 
+      forgot_password_expiry: null 
+    });
+
+    // Send confirmation email
+    await sendPasswordResetConfirmation(
+      user.email,
+      user.full_name || user.email.split('@')[0]
+    );
+
+    // Generate new tokens for immediate login
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+    
+    // Remove password from response
+    const { password: _, ...userResponse } = user;
+
+    return c.json({ 
+      message: "Password has been successfully reset",
+      user: userResponse, 
+      accessToken, 
+      refreshToken 
+    });
+  } catch (error: any) {
+    console.error("Reset password error:", error);
+    return c.json({ 
+      error: "An error occurred while resetting your password. Please try again." 
+    }, 500);
   }
-
-  const newHashed = await hashPassword(password);
-  await updateUser(user.id, { password: newHashed, forgot_password_token: null, forgot_password_expiry: null });
-
-  const accessToken = generateAccessToken(user.id);
-  const refreshToken = generateRefreshToken(user.id);
-  return c.json({ user, accessToken, refreshToken });
 };
 
 // Profile management functions
