@@ -309,18 +309,3 @@ export const logPaymentOperation = (
     ...context,
   });
 };
-
-// Analytics operation logging helper
-export const logAnalyticsEvent = (
-  event: string,
-  userId?: string,
-  properties?: Record<string, any>,
-  context?: LogContext
-) => {
-  logger.analytics(`Analytics event: ${event}`, {
-    event,
-    userId,
-    properties,
-    ...context,
-  });
-};

@@ -13,11 +13,6 @@ import {
   purchaseProject
 } from '../controllers/projects.controller';
 import { isLoggedIn, requireManager, requireSeller } from '../middlewares/users.middlewares';
-import {
-  trackProjectCreation,
-  trackProjectUpdate,
-  trackProjectView
-} from '../middlewares/posthog-tracking.middleware';
 
 // ===== SHARED SCHEMAS =====
 const PricingSchema = z.object({
@@ -413,7 +408,6 @@ export function projectsRoutes(app: OpenAPIHono) {
   app.openapi(getProjectsWithFiltersRoute, getProjectsWithFilters);
   
   // GET /projects/{id} - Get project by ID
-  app.use('/projects/:id', trackProjectView());
   app.openapi(getProjectByIdRoute, getProjectById);
   
   // GET /projects/featured - Get featured projects
@@ -426,12 +420,10 @@ export function projectsRoutes(app: OpenAPIHono) {
   
   // POST /projects - Create new project (Seller only)
   app.use('/projects', isLoggedIn, requireSeller);
-  app.use('/projects', trackProjectCreation());
   app.openapi(createProjectRoute, createProjectHandler);
   
   // PUT /projects/{id} - Update project (Authenticated users)
   app.use('/projects/*', isLoggedIn);
-  app.use('/projects/:id', trackProjectUpdate());
   app.openapi(updateProjectRoute, updateProjectHandler);
   
   // DELETE /projects/{id} - Delete project (Authenticated users)

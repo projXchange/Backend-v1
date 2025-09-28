@@ -9,7 +9,6 @@ import {
   clearWishlistHandler
 } from '../controllers/wishlists.controller';
 import { isLoggedIn } from '../middlewares/users.middlewares';
-import { trackWishlistAction } from '../middlewares/posthog-tracking.middleware';
 
 const MessageResponse = z.object({
   message: z.string(),
@@ -162,11 +161,9 @@ export function wishlistRoutes(app: OpenAPIHono) {
   app.openapi(getUserWishlistRoute, getUserWishlist);
   
   // POST /wishlist - Add to wishlist
-  app.use('/wishlist', trackWishlistAction('add'));
   app.openapi(addToWishlistRoute, addToWishlistHandler);
   
   // DELETE /wishlist/{project_id} - Remove from wishlist
-  app.use('/wishlist/:project_id', trackWishlistAction('remove'));
   app.openapi(removeFromWishlistRoute, removeFromWishlistHandler);
   
   // GET /wishlist/{project_id}/status - Check wishlist status

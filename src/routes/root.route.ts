@@ -1,6 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { checkPostHogHealth } from '../config/posthog';
 
 const rootRoute = createRoute({
   method: 'get',
@@ -28,13 +27,7 @@ const healthRoute = createRoute({
         'application/json': { 
           schema: z.object({ 
             status: z.string(),
-            timestamp: z.string(),
-            services: z.object({
-              posthog: z.object({
-                status: z.string(),
-                error: z.string().optional()
-              })
-            })
+            timestamp: z.string()
           }) 
         } 
       },
@@ -46,14 +39,9 @@ const healthRoute = createRoute({
 const rootHandler = (c: any) => c.json({ message: 'Welcome to ProjXChange API!' });
 
 const healthHandler = async (c: any) => {
-  const posthogHealth = await checkPostHogHealth();
-  
   return c.json({
     status: 'healthy',
-    timestamp: new Date().toISOString(),
-    services: {
-      posthog: posthogHealth
-    }
+    timestamp: new Date().toISOString()
   });
 };
 

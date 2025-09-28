@@ -152,10 +152,6 @@ class Logger {
     this.info(`💳 ${message}`, context);
   }
 
-  // PostHog/Analytics logging
-  analytics(message: string, context?: LogContext) {
-    this.debug(`📊 ${message}`, context);
-  }
 
   // Security related logging
   security(message: string, context?: LogContext) {
@@ -200,7 +196,6 @@ export const log = {
   db: (message: string, context?: LogContext) => mainLogger.db(message, context),
   email: (message: string, context?: LogContext) => mainLogger.email(message, context),
   payment: (message: string, context?: LogContext) => mainLogger.payment(message, context),
-  analytics: (message: string, context?: LogContext) => mainLogger.analytics(message, context),
   security: (message: string, context?: LogContext) => mainLogger.security(message, context),
   performance: (message: string, context?: LogContext) => mainLogger.performance(message, context),
 };

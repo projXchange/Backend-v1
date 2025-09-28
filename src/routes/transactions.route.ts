@@ -11,10 +11,6 @@ import {
   getRecentTransactionsHandler
 } from '../controllers/transactions.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
-import {
-  trackTransactionCreation,
-  trackTransactionStatusUpdate
-} from '../middlewares/posthog-tracking.middleware';
 
 const ProjectInTransactionResponse = z.object({
   id: z.string(),
@@ -278,7 +274,6 @@ export function transactionsRoutes(app: OpenAPIHono) {
   app.openapi(getSellerTransactionsRoute, getSellerTransactions);
   app.openapi(getTransactionByIdRoute, getTransactionById);
   
-  app.use('/transactions', trackTransactionCreation());
   app.openapi(createTransactionRoute, createTransactionHandler);
   
   app.openapi(getTransactionStatsRoute, getTransactionStatsHandler);
@@ -286,7 +281,6 @@ export function transactionsRoutes(app: OpenAPIHono) {
   // Admin routes
   app.use('/admin/transactions/*', isLoggedIn, requireManager);
   
-  app.use('/admin/transactions/:id/status', trackTransactionStatusUpdate());
   app.openapi(updateTransactionStatusRoute, updateTransactionStatus);
   
   app.openapi(getRecentTransactionsRoute, getRecentTransactionsHandler);

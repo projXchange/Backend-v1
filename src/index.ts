@@ -4,8 +4,6 @@ import { swaggerUI } from '@hono/swagger-ui';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { rateLimiter } from './middlewares/rate-limiter.middleware';
-import { initializePostHog, shutdownPostHog } from './config/posthog';
-import { posthogMiddleware } from './middlewares/posthog.middleware';
 import { loggingMiddleware, errorLoggingMiddleware, securityLoggingMiddleware } from './middlewares/logging.middleware';
 import { logger } from './utils/logger';
 import { rootRoutes } from './routes/root.route';
@@ -22,7 +20,6 @@ import { downloadsRoutes } from './routes/downloads.route';
 const app = new OpenAPIHono();
 
 // Initialize services
-initializePostHog();
 logger.info('🚀 Starting ProjXChange API Server', { 
   version: process.env.npm_package_version || '1.0.0',
   nodeEnv: process.env.NODE_ENV || 'development'
@@ -32,8 +29,6 @@ logger.info('🚀 Starting ProjXChange API Server', {
 app.use('*', errorLoggingMiddleware());
 app.use('*', loggingMiddleware());
 
-// PostHog middleware
-app.use('*', posthogMiddleware());
 
 app.use('*', cors({
   origin: ['https://projxchange-backend-v1.vercel.app', 'http://localhost:3000', 'http://localhost:5173', 'https://projxchange-frontend-v1.vercel.app', '*'],
@@ -129,13 +124,11 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 // Graceful shutdown handler
 process.on('SIGINT', async () => {
   logger.info('🛑 Shutting down server (SIGINT)');
-  await shutdownPostHog();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   logger.info('🛑 Shutting down server (SIGTERM)');
-  await shutdownPostHog();
   process.exit(0);
 });
 
