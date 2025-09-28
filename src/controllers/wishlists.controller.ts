@@ -18,7 +18,10 @@ export const getUserWishlist = async (c: any) => {
       total: wishlist.length 
     });
   } catch (error: any) {
-    console.error("Get user wishlist error:", error);
+    c.logger.error("Failed to fetch user wishlist", error, {
+      userId: c.get("userId"),
+      action: 'get_wishlist'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch wishlist" 
     }, 500);
@@ -41,8 +44,14 @@ export const addToWishlistHandler = async (c: any) => {
       wishlist_item: wishlistItem
     });
   } catch (error: any) {
-    console.error("Add to wishlist error:", error);
     const status = error.message.includes("already in wishlist") ? 409 : 500;
+    const { project_id } = await c.req.json();
+    c.logger.error("Failed to add to wishlist", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      isConflict: status === 409,
+      action: 'add_to_wishlist'
+    });
     return c.json({ 
       error: error.message || "Failed to add to wishlist" 
     }, status);
@@ -64,7 +73,12 @@ export const removeFromWishlistHandler = async (c: any) => {
       message: "Project removed from wishlist successfully" 
     });
   } catch (error: any) {
-    console.error("Remove from wishlist error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to remove from wishlist", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'remove_from_wishlist'
+    });
     return c.json({ 
       error: error.message || "Failed to remove from wishlist" 
     }, 500);
@@ -86,7 +100,12 @@ export const checkWishlistStatus = async (c: any) => {
       in_wishlist: inWishlist 
     });
   } catch (error: any) {
-    console.error("Check wishlist status error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to check wishlist status", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'check_wishlist_status'
+    });
     return c.json({ 
       error: error.message || "Failed to check wishlist status" 
     }, 500);
@@ -103,7 +122,10 @@ export const clearWishlistHandler = async (c: any) => {
       message: "Wishlist cleared successfully" 
     });
   } catch (error: any) {
-    console.error("Clear wishlist error:", error);
+    c.logger.error("Failed to clear wishlist", error, {
+      userId: c.get("userId"),
+      action: 'clear_wishlist'
+    });
     return c.json({ 
       error: error.message || "Failed to clear wishlist" 
     }, 500);

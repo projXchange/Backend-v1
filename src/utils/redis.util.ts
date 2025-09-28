@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { logger } from './logger';
 
 // Upstash Redis configuration
 const redis = new Redis({
@@ -9,11 +10,17 @@ const redis = new Redis({
 // Test connection on startup
 redis.ping()
   .then(() => {
-    console.log('✅ Upstash Redis connected successfully');
+    logger.db('Upstash Redis connected successfully', {
+      service: 'redis',
+      status: 'connected'
+    });
   })
   .catch((err: any) => {
-    console.error('❌ Upstash Redis connection error:', err);
-    console.log('Make sure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set in your environment variables');
+    logger.error('Upstash Redis connection error', err, {
+      service: 'redis',
+      status: 'failed',
+      troubleshooting: 'Make sure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set in your environment variables'
+    });
   });
 
 export { redis };

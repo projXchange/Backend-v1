@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono';
 import { getPostHogClient } from '../config/posthog';
+import { logger } from '../utils/logger';
 
 // Helper to get user identifier
 const getDistinctId = (c: Context) => {
@@ -39,7 +40,12 @@ const trackEvent = (c: Context, event: string, properties: Record<string, any> =
     });
   } catch (error) {
     // Silently fail - don't let PostHog errors affect the application
-    console.warn('PostHog tracking error (non-blocking):', error instanceof Error ? error.message : 'Unknown error');
+    logger.warn('PostHog tracking error (non-blocking)', {
+      service: 'posthog',
+      action: 'track_event',
+      event,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 
@@ -60,7 +66,11 @@ export const trackUserSignup = () => {
           has_full_name: !!requestBody.full_name,
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog signup tracking error', {
+          service: 'posthog',
+          action: 'track_signup',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -80,7 +90,11 @@ export const trackUserSignin = () => {
           verification_status: responseBody.user?.verification_status,
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog signin tracking error', {
+          service: 'posthog',
+          action: 'track_signin',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -123,7 +137,11 @@ export const trackPasswordReset = () => {
           });
         }
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog password reset tracking error', {
+          service: 'posthog',
+          action: 'track_password_reset',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -149,7 +167,11 @@ export const trackProfileCreation = () => {
           has_social_links: !!(requestBody.social_links && Object.keys(requestBody.social_links).length > 0),
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog profile creation tracking error', {
+          service: 'posthog',
+          action: 'track_profile_creation',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -180,7 +202,11 @@ export const trackProjectCreation = () => {
           tags_count: Array.isArray(requestBody.tags) ? requestBody.tags.length : 0,
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog project creation tracking error', {
+          service: 'posthog',
+          action: 'track_project_creation',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -207,7 +233,11 @@ export const trackProjectUpdate = () => {
           status_updated: !!requestBody.status,
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog project update tracking error', {
+          service: 'posthog',
+          action: 'track_project_update',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -237,7 +267,11 @@ export const trackProjectView = () => {
           });
         }
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog project view tracking error', {
+          service: 'posthog',
+          action: 'track_project_view',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -274,7 +308,11 @@ export const trackTransactionCreation = () => {
           seller_amount: sellerAmount,
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog transaction creation tracking error', {
+          service: 'posthog',
+          action: 'track_transaction_creation',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -315,7 +353,11 @@ export const trackTransactionStatusUpdate = () => {
           });
         }
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog transaction status tracking error', {
+          service: 'posthog',
+          action: 'track_transaction_status',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -343,7 +385,12 @@ export const trackCartAction = (action: 'add' | 'remove' | 'clear') => {
           project_id: requestBody.project_id || c.req.param('project_id'),
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog cart action tracking error', {
+          service: 'posthog',
+          action: 'track_cart_action',
+          cartAction: action,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };
@@ -369,7 +416,12 @@ export const trackWishlistAction = (action: 'add' | 'remove') => {
           project_id: requestBody.project_id || c.req.param('project_id'),
         });
       } catch (error) {
-        console.warn('PostHog tracking error:', error);
+        logger.warn('PostHog wishlist action tracking error', {
+          service: 'posthog',
+          action: 'track_wishlist_action',
+          wishlistAction: action,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   };

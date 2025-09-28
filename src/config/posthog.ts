@@ -1,18 +1,11 @@
 import { PostHog } from 'posthog-node';
+import { logger } from '../utils/logger';
 
 let posthogClient: PostHog | null = null;
 let isPostHogHealthy = true;
 
-// Suppress PostHog errors globally
-const originalConsoleError = console.error;
-console.error = (...args: any[]) => {
-  const message = args[0];
-  if (typeof message === 'string' && message.includes('PostHog')) {
-    // Suppress PostHog errors
-    return;
-  }
-  originalConsoleError.apply(console, args);
-};
+// Note: PostHog errors are suppressed in individual methods below
+// We don't override global console.error since we now use structured logging
 
 // Suppress unhandled PostHog promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -24,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
     }
   }
   // Let other unhandled rejections be handled normally
-  console.error('Unhandled Promise Rejection:', reason);
+  logger.error('Unhandled Promise Rejection', reason as Error);
 });
 
 // Suppress uncaught PostHog exceptions
@@ -34,7 +27,7 @@ process.on('uncaughtException', (error) => {
     return;
   }
   // Let other uncaught exceptions be handled normally
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception', error as Error);
   process.exit(1);
 });
 
@@ -44,7 +37,7 @@ export const initializePostHog = () => {
     const host = process.env.POSTHOG_HOST || 'https://us.i.posthog.com';
 
     if (!apiKey) {
-      console.warn('PostHog API key not found. Analytics will be disabled.');
+      logger.warn('PostHog API key not found - analytics will be disabled');
       return null;
     }
 
@@ -95,9 +88,11 @@ export const initializePostHog = () => {
         }
       };
 
-      console.log('PostHog initialized successfully');
+    logger.analytics('PostHog initialized successfully', { host });
     } catch (error) {
-      console.warn('PostHog initialization failed, analytics disabled:', error instanceof Error ? error.message : 'Unknown error');
+      logger.warn('PostHog initialization failed, analytics disabled', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       posthogClient = null;
       isPostHogHealthy = false;
     }
@@ -134,9 +129,11 @@ export const shutdownPostHog = async () => {
       );
       
       await Promise.race([shutdownPromise, timeoutPromise]);
-      console.log('PostHog shutdown completed');
+    logger.analytics('PostHog shutdown completed');
     } catch (error) {
-      console.warn('PostHog shutdown failed (non-blocking):', error instanceof Error ? error.message : 'Unknown error');
+      logger.warn('PostHog shutdown failed (non-blocking)', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     } finally {
       posthogClient = null;
     }

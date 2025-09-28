@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono';
 import { getPostHogClient } from '../config/posthog';
+import { logger } from '../utils/logger';
 
 export interface PostHogEventData {
   event: string;
@@ -65,7 +66,12 @@ export const posthogMiddleware = () => {
         });
       } catch (error) {
         // Silently fail - don't let PostHog errors affect the application
-        console.warn('PostHog tracking error (non-blocking):', error instanceof Error ? error.message : 'Unknown error');
+        logger.warn('PostHog tracking error (non-blocking)', {
+          service: 'posthog',
+          action: 'track_event',
+          event: data.event,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     };
 
@@ -85,7 +91,12 @@ export const posthogMiddleware = () => {
         });
       } catch (captureError) {
         // Silently fail - don't let PostHog errors affect the application
-        console.warn('PostHog exception capture error (non-blocking):', captureError instanceof Error ? captureError.message : 'Unknown error');
+        logger.warn('PostHog exception capture error (non-blocking)', {
+          service: 'posthog',
+          action: 'capture_exception',
+          originalError: error.message,
+          captureError: captureError instanceof Error ? captureError.message : 'Unknown error'
+        });
       }
     };
 

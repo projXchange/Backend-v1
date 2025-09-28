@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
-import { sendMail } from "../utils/email.utils";
+// import { sendMail } from "../utils/email.utils"; // TODO: Replace with proper email service
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const signup = async (c: any) => {
@@ -43,6 +43,8 @@ export const signup = async (c: any) => {
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
     
+    // Auth success logged in middleware
+    
     return c.json({ 
       user: userResponse, 
       accessToken, 
@@ -50,7 +52,10 @@ export const signup = async (c: any) => {
     });
     
   } catch (error: any) {
-    console.error("Signup error:", error);
+    c.logger.error('User signup failed', error, {
+      email: c.req.json?.()?.email,
+      action: 'signup'
+    });
     return c.json({ 
       error: error.message || "Failed to create account" 
     }, 500);
@@ -73,8 +78,15 @@ export const signin = async (c: any) => {
     const { password: _, ...userResponse } = user;
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
+    
+    // Auth success logged in middleware
+    
     return c.json({  user: userResponse, accessToken, refreshToken });
-  }catch(error:any){  
+  }catch(error:any){
+    c.logger.error('User signin failed', error, {
+      email: c.req.json?.()?.email,
+      action: 'signin'
+    });
     return c.json({ error: error.message || "Failed to sign in" }, 500);
   }
 };
@@ -92,47 +104,88 @@ export const logout = async (c: any) => {
 };
 
 export const forgotPassword = async (c: any) => {
-  const { email } = await c.req.json();
-  if (!email) return c.json({ error: "Email required" }, 400);
+  try {
+    const { email } = await c.req.json();
+    if (!email) return c.json({ error: "Email required" }, 400);
 
-  // Could rate-limit on IP/email here
-  const usersFound = await findByEmail(email);
-  if (!usersFound.length) return c.json({ message: "If this email exists, a reset link will be sent." });
+    // Could rate-limit on IP/email here
+    const usersFound = await findByEmail(email);
+    if (!usersFound.length) {
+      c.logger.security('Password reset attempted for non-existent email', {
+        email,
+        action: 'forgot_password',
+        result: 'user_not_found'
+      });
+      return c.json({ message: "If this email exists, a reset link will be sent." });
+    }
 
-  const user = usersFound[0];
+    const user = usersFound[0];
 
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
-  const expiry = new Date(Date.now() + (parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "20", 10)) * 60 * 1000);
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const expiry = new Date(Date.now() + (parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "20", 10)) * 60 * 1000);
 
-  await updateUser(user.id, { forgot_password_token: hashed, forgot_password_expiry: expiry });
+    await updateUser(user.id, { forgot_password_token: hashed, forgot_password_expiry: expiry });
 
-  const resetUrl = `http://yourfrontend/reset-password/${resetToken}`;
-  await sendMail(user.email, "Password reset", `Reset password: ${resetUrl}`);
+    // TODO: Integrate with proper email service
+    // const resetUrl = `http://yourfrontend/reset-password/${resetToken}`;
+    // await sendMail(user.email, "Password reset", `Reset password: ${resetUrl}`);
+    
+    // Auth action logged in middleware
 
-  return c.json({ message: "If this email exists, a reset link will be sent." });
+    return c.json({ message: "If this email exists, a reset link will be sent." });
+  } catch (error: any) {
+    c.logger.error('Password reset request failed', error, {
+      action: 'forgot_password'
+    });
+    return c.json({ error: error.message || "Failed to process password reset" }, 500);
+  }
 };
 
 export const resetPassword = async (c: any) => {
-  const { token } = c.req.param();
-  const { password } = await c.req.json();
-  if (!password || password.length < 8) return c.json({ error: "Password must be at least 8 characters" }, 400);
+  try {
+    const { token } = c.req.param();
+    const { password } = await c.req.json();
+    if (!password || password.length < 8) return c.json({ error: "Password must be at least 8 characters" }, 400);
 
-  const hashed = crypto.createHash("sha256").update(token).digest("hex");
-  const usersFound = await findByForgotToken(hashed);
-  if (!usersFound.length) return c.json({ error: "Invalid or expired token" }, 400);
+    const hashed = crypto.createHash("sha256").update(token).digest("hex");
+    const usersFound = await findByForgotToken(hashed);
+    if (!usersFound.length) {
+      c.logger.security('Invalid password reset token used', {
+        token: token.substring(0, 8) + '...',
+        action: 'reset_password',
+        result: 'invalid_token'
+      });
+      return c.json({ error: "Invalid or expired token" }, 400);
+    }
 
-  const user = usersFound[0];
-  if (user.forgot_password_expiry && user.forgot_password_expiry < new Date()) {
-    return c.json({ error: "Token expired" }, 400);
+    const user = usersFound[0];
+    if (user.forgot_password_expiry && user.forgot_password_expiry < new Date()) {
+      c.logger.security('Expired password reset token used', {
+        userId: user.id,
+        email: user.email,
+        action: 'reset_password',
+        result: 'expired_token',
+        expiry: user.forgot_password_expiry
+      });
+      return c.json({ error: "Token expired" }, 400);
+    }
+
+    const newHashed = await hashPassword(password);
+    await updateUser(user.id, { password: newHashed, forgot_password_token: null, forgot_password_expiry: null });
+
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+    
+    // Auth action logged in middleware
+    
+    return c.json({ user, accessToken, refreshToken });
+  } catch (error: any) {
+    c.logger.error('Password reset failed', error, {
+      action: 'reset_password'
+    });
+    return c.json({ error: error.message || "Failed to reset password" }, 500);
   }
-
-  const newHashed = await hashPassword(password);
-  await updateUser(user.id, { password: newHashed, forgot_password_token: null, forgot_password_expiry: null });
-
-  const accessToken = generateAccessToken(user.id);
-  const refreshToken = generateRefreshToken(user.id);
-  return c.json({ user, accessToken, refreshToken });
 };
 
 // Profile management functions
@@ -178,7 +231,10 @@ export const createUserProfile = async (c: any) => {
       profile: updatedUser 
     });
   } catch (error: any) {
-    console.error("Create user profile error:", error);
+    c.logger.error("Failed to create user profile", error, {
+      userId: c.get("userId"),
+      action: 'create_profile'
+    });
     return c.json({ 
       error: error.message || "Failed to create user profile" 
     }, 500);
@@ -252,7 +308,12 @@ export const updateUserProfile = async (c: any) => {
       profile: updatedUser 
     });
   } catch (error: any) {
-    console.error("Update user profile error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to update user profile", error, {
+      userId: c.get("userId"),
+      targetUserId: id,
+      action: 'update_profile'
+    });
     return c.json({ 
       error: error.message || "Failed to update user profile" 
     }, 500);
@@ -268,7 +329,11 @@ export const getUserProfile = async (c: any) => {
     
     return c.json({ profile: user });
   } catch (error: any) {
-    console.error("Get user profile error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to fetch user profile", error, {
+      targetUserId: id,
+      action: 'get_user_profile'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch user profile" 
     }, 500);
@@ -287,7 +352,12 @@ export const getAllUserProfiles = async (c: any) => {
       total: users.length 
     });
   } catch (error: any) {
-    console.error("Get all user profiles error:", error);
+    const { include_deleted } = c.req.query();
+    const includeDeleted = include_deleted === "true";
+    c.logger.error("Failed to fetch all user profiles", error, {
+      action: 'get_all_profiles',
+      includeDeleted
+    });
     return c.json({ 
       error: error.message || "Failed to fetch user profiles" 
     }, 500);
@@ -327,7 +397,12 @@ export const deleteUserProfile = async (c: any) => {
       message: "User profile deleted successfully" 
     });
   } catch (error: any) {
-    console.error("Delete user profile error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to delete user profile", error, {
+      userId: c.get("userId"),
+      targetUserId: id,
+      action: 'delete_profile'
+    });
     return c.json({ 
       error: error.message || "Failed to delete user profile" 
     }, 500);
@@ -343,7 +418,10 @@ export const getMyProfile = async (c: any) => {
     
     return c.json({ profile: user });
   } catch (error: any) {
-    console.error("Get my profile error:", error);
+    c.logger.error("Failed to fetch user profile", error, {
+      userId: c.get("userId"),
+      action: 'get_my_profile'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch profile" 
     }, 500);

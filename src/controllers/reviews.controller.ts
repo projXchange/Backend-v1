@@ -29,7 +29,11 @@ export const getProjectReviews = async (c: any) => {
       total: reviews.length
     });
   } catch (error: any) {
-    console.error("Get project reviews error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to fetch project reviews", error, {
+      projectId: project_id,
+      action: 'get_project_reviews'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch project reviews" 
     }, 500);
@@ -47,7 +51,10 @@ export const getUserReviews = async (c: any) => {
       total: reviews.length 
     });
   } catch (error: any) {
-    console.error("Get user reviews error:", error);
+    c.logger.error("Failed to fetch user reviews", error, {
+      userId: c.get("userId"),
+      action: 'get_user_reviews'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch user reviews" 
     }, 500);
@@ -83,8 +90,15 @@ export const createReviewHandler = async (c: any) => {
       review: newReview
     });
   } catch (error: any) {
-    console.error("Create review error:", error);
+    const { project_id, rating } = await c.req.json();
     const status = error.message.includes("already reviewed") ? 409 : 500;
+    c.logger.error("Failed to create review", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      rating,
+      isConflict: status === 409,
+      action: 'create_review'
+    });
     return c.json({ 
       error: error.message || "Failed to create review" 
     }, status);
@@ -148,7 +162,20 @@ export const updateReviewHandler = async (c: any) => {
       review: updatedReview
     });
   } catch (error: any) {
-    console.error("Update review error:", error);
+    const { id } = c.req.param();
+    const userId = c.get("userId");
+    const user = c.get("user");
+    // Need to re-declare these for the error context
+    const canEditContent = true; // We don't have access to currentReview here
+    const canModerate = ["admin", "manager"].includes(user?.user_type);
+    
+    c.logger.error("Failed to update review", error, {
+      userId,
+      reviewId: id,
+      canEditContent,
+      canModerate,
+      action: 'update_review'
+    });
     return c.json({ 
       error: error.message || "Failed to update review" 
     }, 500);
@@ -185,7 +212,12 @@ export const deleteReviewHandler = async (c: any) => {
       message: "Review deleted successfully" 
     });
   } catch (error: any) {
-    console.error("Delete review error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to delete review", error, {
+      userId: c.get("userId"),
+      reviewId: id,
+      action: 'delete_review'
+    });
     return c.json({ 
       error: error.message || "Failed to delete review" 
     }, 500);
@@ -207,7 +239,11 @@ export const getProjectRatingStatsHandler = async (c: any) => {
       rating_stats: stats
     });
   } catch (error: any) {
-    console.error("Get project rating stats error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to fetch project rating stats", error, {
+      projectId: project_id,
+      action: 'get_rating_stats'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch rating stats" 
     }, 500);
@@ -224,7 +260,10 @@ export const getPendingReviewsHandler = async (c: any) => {
       total: reviews.length
     });
   } catch (error: any) {
-    console.error("Get pending reviews error:", error);
+    c.logger.error("Failed to fetch pending reviews", error, {
+      action: 'get_pending_reviews',
+      adminOnly: true
+    });
     return c.json({ 
       error: error.message || "Failed to fetch pending reviews" 
     }, 500);

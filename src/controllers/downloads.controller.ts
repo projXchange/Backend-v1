@@ -20,7 +20,10 @@ export const getUserDownloads = async (c: any) => {
       total: downloads.length 
     });
   } catch (error: any) {
-    console.error("Get user downloads error:", error);
+    c.logger.error("Failed to fetch user downloads", error, {
+      userId: c.get("userId"),
+      action: 'get_user_downloads'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch downloads" 
     }, 500);
@@ -81,7 +84,12 @@ export const downloadProject = async (c: any) => {
       download_type
     });
   } catch (error: any) {
-    console.error("Download project error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to process project download", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'download_project'
+    });
     return c.json({ 
       error: error.message || "Failed to process download" 
     }, 500);
@@ -119,7 +127,12 @@ export const getProjectDownloadStats = async (c: any) => {
       stats
     });
   } catch (error: any) {
-    console.error("Get project download stats error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to fetch project download stats", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'get_download_stats'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch download stats" 
     }, 500);
@@ -143,7 +156,12 @@ export const getUserDownloadHistoryHandler = async (c: any) => {
       total: history.length
     });
   } catch (error: any) {
-    console.error("Get user download history error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to fetch user download history", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'get_download_history'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch download history" 
     }, 500);

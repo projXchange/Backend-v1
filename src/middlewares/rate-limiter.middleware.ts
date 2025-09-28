@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono';
 import { rateLimiters, RateLimiter } from '../utils/rate-limiter.util';
+import { logger } from '../utils/logger';
 
 export type RateLimitType = 'general' | 'auth' | 'upload' | 'admin' | 'public';
 
@@ -52,6 +53,16 @@ export function rateLimiter(options: RateLimiterOptions = {}) {
       if (!result.allowed) {
         c.header('Retry-After', Math.ceil((result.resetTime || 0) - Date.now() / 1000).toString());
         
+        logger.security('Rate limit exceeded', {
+          service: 'rate-limiter',
+          type: rateLimitType,
+          identifier: requestId,
+          path: c.req.path,
+          method: c.req.method,
+          tokensLeft: result.tokensLeft,
+          resetTime: result.resetTime
+        });
+        
         return c.json({
           success: false,
           message: 'Rate limit exceeded. Please try again later.',
@@ -64,7 +75,12 @@ export function rateLimiter(options: RateLimiterOptions = {}) {
       await next();
       
     } catch (error) {
-      console.error('Rate limiter middleware error:', error);
+      logger.error('Rate limiter middleware error', error as Error, {
+        service: 'rate-limiter',
+        action: 'fail-open',
+        path: c.req.path,
+        method: c.req.method
+      });
       // Fail open - continue with request if rate limiter fails
       await next();
     }

@@ -37,7 +37,18 @@ export const updateUserStatus = async (c: any) => {
       user: userResponse 
     });
   } catch (error: any) {
-    console.error("Update user status error:", error);
+    const { id } = c.req.param();
+    const { verification_status, email_verified } = await c.req.json();
+    const updateData: any = {};
+    if (verification_status !== undefined) updateData.verification_status = verification_status;
+    if (email_verified !== undefined) updateData.email_verified = email_verified;
+    
+    c.logger.error("Failed to update user status", error, {
+      adminUserId: c.get("userId"),
+      targetUserId: id,
+      updateFields: Object.keys(updateData || {}),
+      action: 'admin_update_user_status'
+    });
     return c.json({ 
       error: error.message || "Failed to update user" 
     }, 500);
@@ -58,7 +69,12 @@ export const deleteUser = async (c: any) => {
       message: "User deleted successfully" 
     });
   } catch (error: any) {
-    console.error("Delete user error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to delete user", error, {
+      adminUserId: c.get("userId"),
+      targetUserId: id,
+      action: 'admin_delete_user'
+    });
     return c.json({ 
       error: error.message || "Failed to delete user" 
     }, 500);
@@ -83,7 +99,13 @@ export const getAllUsers = async (c: any) => {
       total: usersResponse.length 
     });
   } catch (error: any) {
-    console.error("Get all users error:", error);
+    const { include_deleted } = c.req.query();
+    const includeDeleted = include_deleted === "true";
+    c.logger.error("Failed to fetch all users", error, {
+      adminUserId: c.get("userId"),
+      includeDeleted,
+      action: 'admin_get_all_users'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch users" 
     }, 500);
@@ -105,7 +127,12 @@ export const getUserById = async (c: any) => {
     
     return c.json({ user: userResponse });
   } catch (error: any) {
-    console.error("Get user by ID error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to fetch user by ID", error, {
+      adminUserId: c.get("userId"),
+      targetUserId: id,
+      action: 'admin_get_user_by_id'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch user" 
     }, 500);

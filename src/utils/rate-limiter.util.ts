@@ -1,4 +1,5 @@
 import { redis } from './redis.util';
+import { logger } from './logger';
 
 export const LUA_TOKEN_BUCKET = `
 local tokens_key = KEYS[1]
@@ -82,7 +83,12 @@ export class RateLimiter {
         resetTime: this.calculateResetTime()
       };
     } catch (error) {
-      console.error('Rate limiter error:', error);
+      logger.error('Rate limiter error', error as Error, {
+        service: 'rate-limiter',
+        identifier,
+        config: this.config.keyPrefix,
+        action: 'fail-open'
+      });
       // Fail open - allow request if Redis is down
       return {
         allowed: true,

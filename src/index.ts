@@ -6,6 +6,8 @@ import { cors } from 'hono/cors';
 import { rateLimiter } from './middlewares/rate-limiter.middleware';
 import { initializePostHog, shutdownPostHog } from './config/posthog';
 import { posthogMiddleware } from './middlewares/posthog.middleware';
+import { loggingMiddleware, errorLoggingMiddleware, securityLoggingMiddleware } from './middlewares/logging.middleware';
+import { logger } from './utils/logger';
 import { rootRoutes } from './routes/root.route';
 import { authUsersRoutes, usersRoutes } from './routes/users.route';
 import { adminUsersRoutes } from './routes/admin-users.route';
@@ -15,13 +17,22 @@ import { cartRoutes } from './routes/carts.route';
 import { reviewsRoutes } from './routes/reviews.route';
 import { transactionsRoutes } from './routes/transactions.route';
 import { downloadsRoutes } from './routes/downloads.route';
+// import { emailTestRoutes } from './routes/email-test.route'; // TODO: Create email test route when needed
 
 const app = new OpenAPIHono();
 
-// Initialize PostHog
+// Initialize services
 initializePostHog();
+logger.info('🚀 Starting ProjXChange API Server', { 
+  version: process.env.npm_package_version || '1.0.0',
+  nodeEnv: process.env.NODE_ENV || 'development'
+});
 
-// PostHog middleware (should be early in the chain)
+// Logging middleware (should be first for complete request tracking)
+app.use('*', errorLoggingMiddleware());
+app.use('*', loggingMiddleware());
+
+// PostHog middleware
 app.use('*', posthogMiddleware());
 
 app.use('*', cors({
@@ -62,6 +73,9 @@ app.use('*', rateLimiter({
   }
 }));
 
+// Security logging middleware
+app.use('*', securityLoggingMiddleware());
+
 rootRoutes(app);
 authUsersRoutes(app);
 usersRoutes(app);
@@ -72,6 +86,7 @@ wishlistRoutes(app);
 cartRoutes(app);
 transactionsRoutes(app);
 downloadsRoutes(app);
+// emailTestRoutes(app); // TODO: Enable when email test route is created
 
 app.doc('/doc', {
   openapi: '3.0.0',
@@ -113,19 +128,22 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 // Graceful shutdown handler
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server...');
+  logger.info('🛑 Shutting down server (SIGINT)');
   await shutdownPostHog();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down server...');
+  logger.info('🛑 Shutting down server (SIGTERM)');
   await shutdownPostHog();
   process.exit(0);
 });
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`🚀 ProjXChange API Server running on http://localhost:${info.port}`);
-  console.log(`📚 API Documentation: http://localhost:${info.port}/api/doc`);
-  console.log(`🔗 API Endpoint: http://localhost:${info.port}/doc`);
+  logger.info('✅ ProjXChange API Server started successfully', {
+    port: info.port,
+    environment: process.env.NODE_ENV || 'development',
+    apiDocs: `http://localhost:${info.port}/api/doc`,
+    apiEndpoint: `http://localhost:${info.port}/doc`,
+  });
 });

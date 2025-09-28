@@ -22,7 +22,10 @@ export const getUserTransactions = async (c: any) => {
       total: transactions.length 
     });
   } catch (error: any) {
-    console.error("Get user transactions error:", error);
+    c.logger.error("Failed to fetch user transactions", error, {
+      userId: c.get("userId"),
+      action: 'get_user_transactions'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch transactions" 
     }, 500);
@@ -40,7 +43,10 @@ export const getSellerTransactions = async (c: any) => {
       total: transactions.length 
     });
   } catch (error: any) {
-    console.error("Get seller transactions error:", error);
+    c.logger.error("Failed to fetch seller transactions", error, {
+      sellerId: c.get("userId"),
+      action: 'get_seller_transactions'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch seller transactions" 
     }, 500);
@@ -78,7 +84,12 @@ export const getTransactionById = async (c: any) => {
       transaction
     });
   } catch (error: any) {
-    console.error("Get transaction by ID error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to fetch transaction by ID", error, {
+      userId: c.get("userId"),
+      transactionId: id,
+      action: 'get_transaction_by_id'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch transaction" 
     }, 500);
@@ -128,8 +139,12 @@ export const createTransactionHandler = async (c: any) => {
       transaction: newTransaction
     });
   } catch (error: any) {
-    console.error("Create transaction error:", error);
     const status = error.message.includes("already exists") ? 409 : 500;
+    c.logger.error("Failed to create transaction", error, {
+      userId: c.get("userId"),
+      isConflict: status === 409,
+      action: 'create_transaction'
+    });
     return c.json({ 
       error: error.message || "Failed to create transaction" 
     }, status);
@@ -177,7 +192,12 @@ export const updateTransactionStatus = async (c: any) => {
       transaction: updatedTransaction
     });
   } catch (error: any) {
-    console.error("Update transaction status error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to update transaction status", error, {
+      adminUserId: c.get("userId"),
+      transactionId: id,
+      action: 'update_transaction_status'
+    });
     return c.json({ 
       error: error.message || "Failed to update transaction status" 
     }, 500);
@@ -212,7 +232,10 @@ export const getTransactionStatsHandler = async (c: any) => {
       }
     });
   } catch (error: any) {
-    console.error("Get transaction stats error:", error);
+    c.logger.error("Failed to fetch transaction stats", error, {
+      userId: c.get("userId"),
+      action: 'get_transaction_stats'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch transaction stats" 
     }, 500);
@@ -232,7 +255,11 @@ export const getRecentTransactionsHandler = async (c: any) => {
       total: transactions.length
     });
   } catch (error: any) {
-    console.error("Get recent transactions error:", error);
+    c.logger.error("Failed to fetch recent transactions", error, {
+      adminUserId: c.get("userId"),
+      action: 'get_recent_transactions',
+      adminOnly: true
+    });
     return c.json({ 
       error: error.message || "Failed to fetch recent transactions" 
     }, 500);

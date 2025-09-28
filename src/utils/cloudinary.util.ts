@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { logger } from './logger';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -31,7 +32,13 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
       await cloudinary.uploader.destroy(publicId);
     }
   } catch (error: any) {
-    console.error('Failed to delete image:', error.message);
+    logger.warn('Failed to delete image from Cloudinary', {
+      error: error.message,
+      imageUrl,
+      service: 'cloudinary',
+      action: 'delete',
+      critical: false
+    });
     // Don't throw error as this is not critical
   }
 };

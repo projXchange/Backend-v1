@@ -97,7 +97,11 @@ export const createProjectHandler = async (c: any) => {
       project: newProject 
     });
   } catch (error: any) {
-    console.error("Create project error:", error);
+    c.logger.error("Failed to create project", error, {
+      userId: c.get("userId"),
+      userType: c.get("user")?.user_type,
+      action: 'create_project'
+    });
     return c.json({ 
       error: error.message || "Failed to create project" 
     }, 500);
@@ -190,7 +194,12 @@ export const updateProjectHandler = async (c: any) => {
       project: updatedProject 
     });
   } catch (error: any) {
-    console.error("Update project error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to update project", error, {
+      userId: c.get("userId"),
+      projectId: id,
+      action: 'update_project'
+    });
     return c.json({ 
       error: error.message || "Failed to update project" 
     }, 500);
@@ -244,7 +253,12 @@ export const getProjectById = async (c: any) => {
       }
     });
   } catch (error: any) {
-    console.error("Get project by ID error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to fetch project by ID", error, {
+      userId: c.get("userId"),
+      projectId: id,
+      action: 'get_project_by_id'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch project" 
     }, 500);
@@ -293,7 +307,10 @@ export const getProjectsWithFilters = async (c: any) => {
       data: projectsWithDiscounts
     });
   } catch (error: any) {
-    console.error("Get projects with filters error:", error);
+    c.logger.error("Failed to fetch projects with filters", error, {
+      userId: c.get("userId"),
+      action: 'get_projects_with_filters'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch projects" 
     }, 500);
@@ -311,7 +328,10 @@ export const getMyProjects = async (c: any) => {
       total: projects.length 
     });
   } catch (error: any) {
-    console.error("Get my projects error:", error);
+    c.logger.error("Failed to fetch user's projects", error, {
+      userId: c.get("userId"),
+      action: 'get_my_projects'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch projects" 
     }, 500);
@@ -330,7 +350,9 @@ export const getFeaturedProjects = async (c: any) => {
       total: projects.length 
     });
   } catch (error: any) {
-    console.error("Get featured projects error:", error);
+    c.logger.error("Failed to fetch featured projects", error, {
+      action: 'get_featured_projects'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch featured projects" 
     }, 500);
@@ -372,7 +394,12 @@ export const deleteProjectHandler = async (c: any) => {
       message: "Project deleted successfully" 
     });
   } catch (error: any) {
-    console.error("Delete project error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to delete project", error, {
+      userId: c.get("userId"),
+      projectId: id,
+      action: 'delete_project'
+    });
     return c.json({ 
       error: error.message || "Failed to delete project" 
     }, 500);
@@ -404,7 +431,13 @@ export const updateProjectStatus = async (c: any) => {
       project: updatedProject 
     });
   } catch (error: any) {
-    console.error("Update project status error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to update project status", error, {
+      adminUserId: c.get("userId"),
+      projectId: id,
+      action: 'update_project_status',
+      adminOnly: true
+    });
     return c.json({ 
       error: error.message || "Failed to update project status" 
     }, 500);
@@ -446,7 +479,12 @@ export const purchaseProject = async (c: any) => {
       message: "Project purchased successfully" 
     });
   } catch (error: any) {
-    console.error("Purchase project error:", error);
+    const { id } = c.req.param();
+    c.logger.error("Failed to purchase project", error, {
+      userId: c.get("userId"),
+      projectId: id,
+      action: 'purchase_project'
+    });
     return c.json({ 
       error: error.message || "Failed to purchase project" 
     }, 500);

@@ -23,7 +23,10 @@ export const getUserCart = async (c: any) => {
       total_items: cart.length
     });
   } catch (error: any) {
-    console.error("Get user cart error:", error);
+    c.logger.error("Failed to fetch user cart", error, {
+      userId: c.get("userId"),
+      action: 'get_cart'
+    });
     return c.json({ 
       error: error.message || "Failed to fetch cart" 
     }, 500);
@@ -74,8 +77,15 @@ export const addToCartHandler = async (c: any) => {
       cart_item: cartItem
     });
   } catch (error: any) {
-    console.error("Add to cart error:", error);
     const status = error.message.includes("already in cart") ? 409 : 500;
+    const { project_id, quantity } = await c.req.json();
+    c.logger.error("Failed to add to cart", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      quantity,
+      isConflict: status === 409,
+      action: 'add_to_cart'
+    });
     return c.json({ 
       error: error.message || "Failed to add to cart" 
     }, status);
@@ -106,7 +116,14 @@ export const updateCartItemHandler = async (c: any) => {
       cart_item: updatedItem
     });
   } catch (error: any) {
-    console.error("Update cart item error:", error);
+    const { project_id } = c.req.param();
+    const { quantity } = await c.req.json();
+    c.logger.error("Failed to update cart item", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      quantity,
+      action: 'update_cart_item'
+    });
     return c.json({ 
       error: error.message || "Failed to update cart item" 
     }, 500);
@@ -128,7 +145,12 @@ export const removeFromCartHandler = async (c: any) => {
       message: "Project removed from cart successfully" 
     });
   } catch (error: any) {
-    console.error("Remove from cart error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to remove from cart", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'remove_from_cart'
+    });
     return c.json({ 
       error: error.message || "Failed to remove from cart" 
     }, 500);
@@ -145,7 +167,10 @@ export const clearCartHandler = async (c: any) => {
       message: "Cart cleared successfully" 
     });
   } catch (error: any) {
-    console.error("Clear cart error:", error);
+    c.logger.error("Failed to clear cart", error, {
+      userId: c.get("userId"),
+      action: 'clear_cart'
+    });
     return c.json({ 
       error: error.message || "Failed to clear cart" 
     }, 500);
@@ -167,7 +192,12 @@ export const checkCartStatus = async (c: any) => {
       in_cart: inCart 
     });
   } catch (error: any) {
-    console.error("Check cart status error:", error);
+    const { project_id } = c.req.param();
+    c.logger.error("Failed to check cart status", error, {
+      userId: c.get("userId"),
+      projectId: project_id,
+      action: 'check_cart_status'
+    });
     return c.json({ 
       error: error.message || "Failed to check cart status" 
     }, 500);
