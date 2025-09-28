@@ -258,10 +258,7 @@ export const getAllReviewsHandler = async (c: any) => {
     // Parse query parameters
     const filters: ReviewFilters = {
       status: query.status as 'pending' | 'approved' | 'all' || 'all',
-      project_id: query.project_id,
-      user_id: query.user_id,
       rating: query.rating ? parseInt(query.rating) : undefined,
-      is_verified_purchase: query.is_verified_purchase ? query.is_verified_purchase === 'true' : undefined,
       limit: query.limit ? parseInt(query.limit) : 50,
       offset: query.offset ? parseInt(query.offset) : 0,
       sort_by: query.sort_by as 'created_at' | 'rating' | 'updated_at' || 'created_at',
@@ -294,10 +291,7 @@ export const getAllReviewsHandler = async (c: any) => {
       total: reviews.length,
       filters: {
         status: filters.status,
-        project_id: filters.project_id,
-        user_id: filters.user_id,
         rating: filters.rating,
-        is_verified_purchase: filters.is_verified_purchase,
         limit: filters.limit,
         offset: filters.offset,
         sort_by: filters.sort_by,

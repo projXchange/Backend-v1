@@ -34,6 +34,18 @@ const ReviewResponse = z.object({
   user: UserInReviewResponse,
 });
 
+const AdminReviewResponse = z.object({
+  id: z.string(),
+  rating: z.number(),
+  review_text: z.string().nullable(),
+  is_verified_purchase: z.boolean(),
+  is_approved: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  project_id: z.string(),
+  user_id: z.string(),
+});
+
 const RatingStatsResponse = z.object({
   average_rating: z.string().nullable(),
   total_ratings: z.number(),
@@ -220,10 +232,7 @@ const getAllReviewsRoute = createRoute({
   request: {
     query: z.object({
       status: z.enum(['pending', 'approved', 'all']).optional().default('all'),
-      project_id: z.string().uuid().optional(),
-      user_id: z.string().uuid().optional(),
       rating: z.number().int().min(1).max(5).optional(),
-      is_verified_purchase: z.boolean().optional(),
       limit: z.number().int().min(1).max(100).optional().default(50),
       offset: z.number().int().min(0).optional().default(0),
       sort_by: z.enum(['created_at', 'rating', 'updated_at']).optional().default('created_at'),
@@ -236,14 +245,11 @@ const getAllReviewsRoute = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            reviews: z.array(ReviewResponse),
+            reviews: z.array(AdminReviewResponse),
             total: z.number(),
             filters: z.object({
               status: z.string(),
-              project_id: z.string().optional(),
-              user_id: z.string().optional(),
               rating: z.number().optional(),
-              is_verified_purchase: z.boolean().optional(),
               limit: z.number(),
               offset: z.number(),
               sort_by: z.string(),

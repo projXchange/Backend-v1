@@ -226,10 +226,7 @@ export const getReviewStats = async (reviewId: string) => {
 
 export interface ReviewFilters {
   status?: 'pending' | 'approved' | 'all';
-  project_id?: string;
-  user_id?: string;
   rating?: number;
-  is_verified_purchase?: boolean;
   limit?: number;
   offset?: number;
   sort_by?: 'created_at' | 'rating' | 'updated_at';
@@ -240,10 +237,7 @@ export const getAllReviews = async (filters: ReviewFilters = {}) => {
   try {
     const {
       status = 'all',
-      project_id,
-      user_id,
       rating,
-      is_verified_purchase,
       limit = 50,
       offset = 0,
       sort_by = 'created_at',
@@ -260,24 +254,9 @@ export const getAllReviews = async (filters: ReviewFilters = {}) => {
     }
     // 'all' means no status filter
 
-    // Project filter
-    if (project_id) {
-      whereConditions.push(eq(reviews.project_id, project_id));
-    }
-
-    // User filter
-    if (user_id) {
-      whereConditions.push(eq(reviews.user_id, user_id));
-    }
-
     // Rating filter
     if (rating) {
       whereConditions.push(eq(reviews.rating, rating));
-    }
-
-    // Verified purchase filter
-    if (is_verified_purchase !== undefined) {
-      whereConditions.push(eq(reviews.is_verified_purchase, is_verified_purchase));
     }
 
     // Apply sorting
@@ -297,14 +276,9 @@ export const getAllReviews = async (filters: ReviewFilters = {}) => {
       created_at: reviews.created_at,
       updated_at: reviews.updated_at,
       project_id: reviews.project_id,
-      user: {
-        id: users.id,
-        full_name: users.full_name,
-        email: users.email
-      }
+      user_id: reviews.user_id
     })
-    .from(reviews)
-    .innerJoin(users, eq(reviews.user_id, users.id));
+    .from(reviews);
 
     // Apply where conditions and execute
     if (whereConditions.length > 0) {
