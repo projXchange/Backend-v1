@@ -155,7 +155,7 @@ export const reviews = pgTable("reviews", {
   rating: integer("rating").notNull(), // 1-5 stars
   review_text: text("review_text"),
   is_verified_purchase: boolean("is_verified_purchase").notNull().default(false),
-  is_approved: boolean("is_approved").notNull().default(true),
+  is_approved: boolean("is_approved").notNull().default(false),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
 }, (table) => {

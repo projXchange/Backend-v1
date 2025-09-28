@@ -7,6 +7,7 @@ import {
   updateReview, 
   deleteReview,
   getProjectRatingStats,
+  getReviewStats,
   getPendingReviews
 } from "../repository/reviews.repository";
 import { checkUserPurchased } from "../repository/projects.repository";
@@ -110,7 +111,7 @@ export const updateReviewHandler = async (c: any) => {
     const { id } = c.req.param();
     const userId = c.get("userId");
     const user = c.get("user");
-    const { rating, review_text, is_approved } = await c.req.json();
+    const { rating, review_text } = await c.req.json();
 
     if (!id) {
       return c.json({ error: "Review ID is required" }, 400);
@@ -125,30 +126,30 @@ export const updateReviewHandler = async (c: any) => {
       return c.json({ error: "Review not found" }, 404);
     }
 
-    // Check permissions
+    // Check permissions - only review author can update
     const canEditContent = currentReview.user_id === userId;
-    const canModerate = ["admin", "manager"].includes(user.user_type);
 
-    if (!canEditContent && !canModerate) {
+    if (!canEditContent) {
       return c.json({ error: "Unauthorized to update this review" }, 403);
     }
 
     const updateData: any = {};
     
-    // Only review author can update content
-    if (canEditContent) {
-      if (rating !== undefined) {
-        if (rating < 1 || rating > 5) {
-          return c.json({ error: "Rating must be between 1 and 5" }, 400);
-        }
-        updateData.rating = rating;
+    // Only allow updating rating and review_text
+    if (rating !== undefined) {
+      if (rating < 1 || rating > 5) {
+        return c.json({ error: "Rating must be between 1 and 5" }, 400);
       }
-      if (review_text !== undefined) updateData.review_text = review_text;
+      updateData.rating = rating;
     }
     
-    // Only admin/manager can update approval status
-    if (canModerate && is_approved !== undefined) {
-      updateData.is_approved = is_approved;
+    if (review_text !== undefined) {
+      updateData.review_text = review_text;
+    }
+
+    // If user is updating their review, set is_approved to false (needs re-approval)
+    if (Object.keys(updateData).length > 0) {
+      updateData.is_approved = false;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -157,23 +158,21 @@ export const updateReviewHandler = async (c: any) => {
 
     const [updatedReview] = await updateReview(id, updateData);
     
+    // Get stats for the review
+    const stats = await getReviewStats(id);
+    
     return c.json({ 
       message: "Review updated successfully",
-      review: updatedReview
+      review: updatedReview,
+      stats
     });
   } catch (error: any) {
     const { id } = c.req.param();
     const userId = c.get("userId");
-    const user = c.get("user");
-    // Need to re-declare these for the error context
-    const canEditContent = true; // We don't have access to currentReview here
-    const canModerate = ["admin", "manager"].includes(user?.user_type);
     
     c.logger.error("Failed to update review", error, {
       userId,
       reviewId: id,
-      canEditContent,
-      canModerate,
       action: 'update_review'
     });
     return c.json({ 

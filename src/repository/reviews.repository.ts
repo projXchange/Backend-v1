@@ -200,6 +200,30 @@ export const getProjectRatingStats = async (projectId: string) => {
   }
 };
 
+export const getReviewStats = async (reviewId: string) => {
+  try {
+    // First get the review to find its project_id
+    const review = await findById(reviewId);
+    if (!review.length) {
+      throw new ReviewNotFoundError(`Review with ID ${reviewId} not found`);
+    }
+    
+    const projectId = review[0].project_id;
+    
+    // Get project-wide stats
+    const stats = await getProjectRatingStats(projectId);
+    
+    return {
+      review_id: reviewId,
+      project_id: projectId,
+      ...stats
+    };
+  } catch (error) {
+    if (error instanceof ReviewRepositoryError) throw error;
+    throw new ReviewRepositoryError(`Failed to get review stats: ${error}`);
+  }
+};
+
 export const getPendingReviews = async () => {
   try {
     return await db.select({

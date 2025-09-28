@@ -1,0 +1,1 @@
+ALTER TABLE "reviews" ALTER COLUMN "is_approved" SET DEFAULT false;
