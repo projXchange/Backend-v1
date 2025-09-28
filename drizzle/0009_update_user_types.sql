@@ -2,10 +2,8 @@
 -- First, add the new enum values to the existing enum
 ALTER TYPE "user_type_enum" ADD VALUE IF NOT EXISTS 'user';
 
--- Update existing data to use 'user' instead of 'buyer' and 'seller'
--- Note: This will only work if 'user' value exists in the enum
-UPDATE "users" SET "user_type" = 'user' WHERE "user_type" = 'buyer';
-UPDATE "users" SET "user_type" = 'user' WHERE "user_type" = 'seller';
+-- Note: No need to update existing data as 'buyer' and 'seller' values don't exist
+-- The current data already uses 'user', 'admin' values which are valid
 
 -- Drop the old enum values (this requires recreating the enum)
 -- First, create a new enum with only the values we want
@@ -24,27 +22,6 @@ ALTER TYPE "user_type_enum_new" RENAME TO "user_type_enum";
 -- Set default to 'user'
 ALTER TABLE "users" ALTER COLUMN "user_type" SET DEFAULT 'user';
 
--- Rename seller_id to author_id in transactions table (if it exists)
-DO $$ 
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'seller_id') THEN
-        ALTER TABLE "transactions" RENAME COLUMN "seller_id" TO "author_id";
-    END IF;
-END $$;
-
--- Rename seller_amount to author_amount in transactions table (if it exists)
-DO $$ 
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'seller_amount') THEN
-        ALTER TABLE "transactions" RENAME COLUMN "seller_amount" TO "author_amount";
-    END IF;
-END $$;
-
--- Update the index name (if it exists)
-DROP INDEX IF EXISTS "idx_transactions_seller_id";
-DO $$ 
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'author_id') THEN
-        CREATE INDEX IF NOT EXISTS "idx_transactions_author_id" ON "transactions" ("author_id");
-    END IF;
-END $$;
+-- Note: The transactions table already has author_id and author_amount columns
+-- No need to rename seller_id/seller_amount as they don't exist
+-- The schema is already up to date with the correct column names
