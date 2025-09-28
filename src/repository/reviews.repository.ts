@@ -224,13 +224,79 @@ export const getReviewStats = async (reviewId: string) => {
   }
 };
 
-export const getPendingReviews = async () => {
+export interface ReviewFilters {
+  status?: 'pending' | 'approved' | 'all';
+  project_id?: string;
+  user_id?: string;
+  rating?: number;
+  is_verified_purchase?: boolean;
+  limit?: number;
+  offset?: number;
+  sort_by?: 'created_at' | 'rating' | 'updated_at';
+  sort_order?: 'asc' | 'desc';
+}
+
+export const getAllReviews = async (filters: ReviewFilters = {}) => {
   try {
-    return await db.select({
+    const {
+      status = 'all',
+      project_id,
+      user_id,
+      rating,
+      is_verified_purchase,
+      limit = 50,
+      offset = 0,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = filters;
+
+    let whereConditions = [];
+
+    // Status filter
+    if (status === 'pending') {
+      whereConditions.push(eq(reviews.is_approved, false));
+    } else if (status === 'approved') {
+      whereConditions.push(eq(reviews.is_approved, true));
+    }
+    // 'all' means no status filter
+
+    // Project filter
+    if (project_id) {
+      whereConditions.push(eq(reviews.project_id, project_id));
+    }
+
+    // User filter
+    if (user_id) {
+      whereConditions.push(eq(reviews.user_id, user_id));
+    }
+
+    // Rating filter
+    if (rating) {
+      whereConditions.push(eq(reviews.rating, rating));
+    }
+
+    // Verified purchase filter
+    if (is_verified_purchase !== undefined) {
+      whereConditions.push(eq(reviews.is_verified_purchase, is_verified_purchase));
+    }
+
+    // Apply sorting
+    const sortColumn = sort_by === 'rating' ? reviews.rating : 
+                      sort_by === 'updated_at' ? reviews.updated_at : 
+                      reviews.created_at;
+    
+    const sortDirection = sort_order === 'asc' ? asc(sortColumn) : desc(sortColumn);
+
+    // Build the base query
+    const baseQuery = db.select({
       id: reviews.id,
       rating: reviews.rating,
       review_text: reviews.review_text,
+      is_verified_purchase: reviews.is_verified_purchase,
+      is_approved: reviews.is_approved,
       created_at: reviews.created_at,
+      updated_at: reviews.updated_at,
+      project_id: reviews.project_id,
       user: {
         id: users.id,
         full_name: users.full_name,
@@ -238,12 +304,25 @@ export const getPendingReviews = async () => {
       }
     })
     .from(reviews)
-    .innerJoin(users, eq(reviews.user_id, users.id))
-    .where(eq(reviews.is_approved, false))
-    .orderBy(asc(reviews.created_at));
+    .innerJoin(users, eq(reviews.user_id, users.id));
+
+    // Apply where conditions and execute
+    if (whereConditions.length > 0) {
+      return await baseQuery
+        .where(and(...whereConditions))
+        .orderBy(sortDirection)
+        .limit(limit)
+        .offset(offset);
+    } else {
+      return await baseQuery
+        .orderBy(sortDirection)
+        .limit(limit)
+        .offset(offset);
+    }
   } catch (error) {
-    throw new ReviewRepositoryError(`Failed to get pending reviews: ${error}`);
+    throw new ReviewRepositoryError(`Failed to get reviews with filters: ${error}`);
   }
 };
+
 
 export { ReviewRepositoryError, ReviewNotFoundError };

@@ -8,7 +8,8 @@ import {
   deleteReview,
   getProjectRatingStats,
   getReviewStats,
-  getPendingReviews
+  getAllReviews,
+  ReviewFilters
 } from "../repository/reviews.repository";
 import { checkUserPurchased } from "../repository/projects.repository";
 
@@ -249,22 +250,68 @@ export const getProjectRatingStatsHandler = async (c: any) => {
   }
 };
 
-// Admin only
-export const getPendingReviewsHandler = async (c: any) => {
+// Admin only - Get all reviews with filtering
+export const getAllReviewsHandler = async (c: any) => {
   try {
-    const reviews = await getPendingReviews();
+    const query = c.req.query();
+    
+    // Parse query parameters
+    const filters: ReviewFilters = {
+      status: query.status as 'pending' | 'approved' | 'all' || 'all',
+      project_id: query.project_id,
+      user_id: query.user_id,
+      rating: query.rating ? parseInt(query.rating) : undefined,
+      is_verified_purchase: query.is_verified_purchase ? query.is_verified_purchase === 'true' : undefined,
+      limit: query.limit ? parseInt(query.limit) : 50,
+      offset: query.offset ? parseInt(query.offset) : 0,
+      sort_by: query.sort_by as 'created_at' | 'rating' | 'updated_at' || 'created_at',
+      sort_order: query.sort_order as 'asc' | 'desc' || 'desc'
+    };
+
+    // Validate status parameter
+    if (filters.status && !['pending', 'approved', 'all'].includes(filters.status)) {
+      return c.json({ error: "Invalid status parameter. Must be 'pending', 'approved', or 'all'" }, 400);
+    }
+
+    // Validate rating parameter
+    if (filters.rating && (filters.rating < 1 || filters.rating > 5)) {
+      return c.json({ error: "Rating must be between 1 and 5" }, 400);
+    }
+
+    // Validate sort parameters
+    if (filters.sort_by && !['created_at', 'rating', 'updated_at'].includes(filters.sort_by)) {
+      return c.json({ error: "Invalid sort_by parameter. Must be 'created_at', 'rating', or 'updated_at'" }, 400);
+    }
+
+    if (filters.sort_order && !['asc', 'desc'].includes(filters.sort_order)) {
+      return c.json({ error: "Invalid sort_order parameter. Must be 'asc' or 'desc'" }, 400);
+    }
+
+    const reviews = await getAllReviews(filters);
     
     return c.json({ 
-      pending_reviews: reviews,
-      total: reviews.length
+      reviews,
+      total: reviews.length,
+      filters: {
+        status: filters.status,
+        project_id: filters.project_id,
+        user_id: filters.user_id,
+        rating: filters.rating,
+        is_verified_purchase: filters.is_verified_purchase,
+        limit: filters.limit,
+        offset: filters.offset,
+        sort_by: filters.sort_by,
+        sort_order: filters.sort_order
+      }
     });
   } catch (error: any) {
-    c.logger.error("Failed to fetch pending reviews", error, {
-      action: 'get_pending_reviews',
+    c.logger.error("Failed to fetch reviews", error, {
+      action: 'get_all_reviews',
       adminOnly: true
     });
     return c.json({ 
-      error: error.message || "Failed to fetch pending reviews" 
+      error: error.message || "Failed to fetch reviews" 
     }, 500);
   }
 };
+

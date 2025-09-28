@@ -8,7 +8,7 @@ import {
   updateReviewHandler,
   deleteReviewHandler,
   getProjectRatingStatsHandler,
-  getPendingReviewsHandler
+  getAllReviewsHandler
 } from '../controllers/reviews.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
@@ -213,18 +213,52 @@ const getProjectRatingStatsRoute = createRoute({
   tags: ['Reviews'],
 });
 
-// 7. GET PENDING REVIEWS (ADMIN) - GET /admin/reviews/pending
-const getPendingReviewsRoute = createRoute({
+// 7. GET ALL REVIEWS WITH FILTERING (ADMIN) - GET /admin/reviews
+const getAllReviewsRoute = createRoute({
   method: 'get',
-  path: '/admin/reviews/pending',
+  path: '/admin/reviews',
+  request: {
+    query: z.object({
+      status: z.enum(['pending', 'approved', 'all']).optional().default('all'),
+      project_id: z.string().uuid().optional(),
+      user_id: z.string().uuid().optional(),
+      rating: z.number().int().min(1).max(5).optional(),
+      is_verified_purchase: z.boolean().optional(),
+      limit: z.number().int().min(1).max(100).optional().default(50),
+      offset: z.number().int().min(0).optional().default(0),
+      sort_by: z.enum(['created_at', 'rating', 'updated_at']).optional().default('created_at'),
+      sort_order: z.enum(['asc', 'desc']).optional().default('desc'),
+    }),
+  },
   responses: {
     200: {
-      description: 'Pending reviews fetched successfully',
+      description: 'Reviews fetched successfully with filtering',
       content: {
         'application/json': {
           schema: z.object({
-            pending_reviews: z.array(ReviewResponse),
+            reviews: z.array(ReviewResponse),
             total: z.number(),
+            filters: z.object({
+              status: z.string(),
+              project_id: z.string().optional(),
+              user_id: z.string().optional(),
+              rating: z.number().optional(),
+              is_verified_purchase: z.boolean().optional(),
+              limit: z.number(),
+              offset: z.number(),
+              sort_by: z.string(),
+              sort_order: z.string(),
+            }),
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid query parameters',
+      content: {
+        'application/json': {
+          schema: z.object({
+            error: z.string(),
           }),
         },
       },
@@ -232,6 +266,7 @@ const getPendingReviewsRoute = createRoute({
   },
   tags: ['Admin - Reviews'],
 });
+
 
 export function reviewsRoutes(app: OpenAPIHono) {
   // ===== PUBLIC ROUTES (No Authentication Required) =====
@@ -258,7 +293,7 @@ export function reviewsRoutes(app: OpenAPIHono) {
   app.openapi(deleteReviewRoute, deleteReviewHandler);
 
   // ===== ADMIN ROUTES (Admin/Manager Only) =====
-  // GET /admin/reviews/pending - Get pending reviews for moderation
-  app.use('/admin/reviews/*', isLoggedIn, requireManager);
-  app.openapi(getPendingReviewsRoute, getPendingReviewsHandler);
+  // GET /admin/reviews - Get all reviews with filtering
+  app.use('/admin/reviews', isLoggedIn, requireManager);
+  app.openapi(getAllReviewsRoute, getAllReviewsHandler);
 }
