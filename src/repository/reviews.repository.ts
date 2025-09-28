@@ -1,6 +1,6 @@
 // repository/reviews.repository.ts
 import { eq, and, desc, asc, sql } from "drizzle-orm";
-import { reviews, users } from "../models/schema";
+import { reviews, users, projects } from "../models/schema";
 import db from "./db";
 
 class ReviewRepositoryError extends Error {
@@ -45,14 +45,20 @@ export const findByProject = async (projectId: string) => {
       is_approved: reviews.is_approved,
       created_at: reviews.created_at,
       updated_at: reviews.updated_at,
+      project_id: reviews.project_id,
       user: {
         id: users.id,
         full_name: users.full_name,
         email: users.email
+      },
+      project: {
+        id: projects.id,
+        title: projects.title
       }
     })
     .from(reviews)
     .innerJoin(users, eq(reviews.user_id, users.id))
+    .innerJoin(projects, eq(reviews.project_id, projects.id))
     .where(and(
       eq(reviews.project_id, projectId),
       eq(reviews.is_approved, true)
@@ -69,10 +75,24 @@ export const findByUser = async (userId: string) => {
       throw new ReviewRepositoryError("Invalid user ID parameter");
     }
 
-    return await db.select()
-      .from(reviews)
-      .where(eq(reviews.user_id, userId))
-      .orderBy(desc(reviews.created_at));
+    return await db.select({
+      id: reviews.id,
+      rating: reviews.rating,
+      review_text: reviews.review_text,
+      is_verified_purchase: reviews.is_verified_purchase,
+      is_approved: reviews.is_approved,
+      created_at: reviews.created_at,
+      updated_at: reviews.updated_at,
+      project_id: reviews.project_id,
+      project: {
+        id: projects.id,
+        title: projects.title
+      }
+    })
+    .from(reviews)
+    .innerJoin(projects, eq(reviews.project_id, projects.id))
+    .where(eq(reviews.user_id, userId))
+    .orderBy(desc(reviews.created_at));
   } catch (error) {
     throw new ReviewRepositoryError(`Failed to find user reviews: ${error}`);
   }
@@ -276,9 +296,20 @@ export const getAllReviews = async (filters: ReviewFilters = {}) => {
       created_at: reviews.created_at,
       updated_at: reviews.updated_at,
       project_id: reviews.project_id,
-      user_id: reviews.user_id
+      user_id: reviews.user_id,
+      user: {
+        id: users.id,
+        full_name: users.full_name,
+        email: users.email
+      },
+      project: {
+        id: projects.id,
+        title: projects.title
+      }
     })
-    .from(reviews);
+    .from(reviews)
+    .innerJoin(users, eq(reviews.user_id, users.id))
+    .innerJoin(projects, eq(reviews.project_id, projects.id));
 
     // Apply where conditions and execute
     if (whereConditions.length > 0) {

@@ -34,6 +34,36 @@ const ReviewResponse = z.object({
   user: UserInReviewResponse,
 });
 
+const ProjectInReviewResponse = z.object({
+  id: z.string(),
+  title: z.string(),
+});
+
+const UserReviewResponse = z.object({
+  id: z.string(),
+  rating: z.number(),
+  review_text: z.string().nullable(),
+  is_verified_purchase: z.boolean(),
+  is_approved: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  project_id: z.string(),
+  project: ProjectInReviewResponse,
+});
+
+const ProjectReviewResponse = z.object({
+  id: z.string(),
+  rating: z.number(),
+  review_text: z.string().nullable(),
+  is_verified_purchase: z.boolean(),
+  is_approved: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  project_id: z.string(),
+  user: UserInReviewResponse,
+  project: ProjectInReviewResponse,
+});
+
 const AdminReviewResponse = z.object({
   id: z.string(),
   rating: z.number(),
@@ -44,6 +74,8 @@ const AdminReviewResponse = z.object({
   updated_at: z.string(),
   project_id: z.string(),
   user_id: z.string(),
+  user: UserInReviewResponse,
+  project: ProjectInReviewResponse,
 });
 
 const RatingStatsResponse = z.object({
@@ -74,7 +106,7 @@ const getProjectReviewsRoute = createRoute({
         'application/json': {
           schema: z.object({
             project_id: z.string(),
-            reviews: z.array(ReviewResponse),
+            reviews: z.array(ProjectReviewResponse),
             stats: RatingStatsResponse,
             total: z.number(),
           }),
@@ -95,7 +127,7 @@ const getUserReviewsRoute = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            reviews: z.array(ReviewResponse),
+            reviews: z.array(UserReviewResponse),
             total: z.number(),
           }),
         },
