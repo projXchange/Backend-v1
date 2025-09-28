@@ -64,6 +64,13 @@
       "when": 1759069848022,
       "tag": "0008_cynical_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1759070000000,
+      "tag": "0009_update_user_types",
+      "breakpoints": true
     }
   ]
 }

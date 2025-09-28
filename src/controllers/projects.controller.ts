@@ -18,9 +18,9 @@ export const createProjectHandler = async (c: any) => {
     const userId = c.get("userId");
     const user = c.get("user");
     
-    // Only sellers can create projects
-    if (user.user_type !== "seller" && !["admin", "manager"].includes(user.user_type)) {
-      return c.json({ error: "Only sellers can create projects" }, 403);
+    // Only users, admins, and managers can create projects
+    if (!["user", "admin", "manager"].includes(user.user_type)) {
+      return c.json({ error: "Only users, admins, and managers can create projects" }, 403);
     }
 
     const { 

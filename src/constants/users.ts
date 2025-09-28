@@ -1,6 +1,6 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-export const userTypeEnum = pgEnum("user_type_enum", ["buyer", "seller", "admin", "manager"]);
+export const userTypeEnum = pgEnum("user_type_enum", ["user", "admin", "manager"]);
 
 export const verificationStatusEnum = pgEnum("user_verification_status_enum", [
   "pending",

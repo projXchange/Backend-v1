@@ -20,7 +20,7 @@ export interface CreateUserData {
   email: string;
   password: string;
   full_name?: string;
-  user_type?: "buyer" | "seller" | "admin" | "manager";
+  user_type?: "user" | "admin" | "manager";
   // Profile fields
   rating?: number;
   total_sales?: number;
@@ -38,7 +38,7 @@ export interface UpdateUserData {
   email?: string;
   full_name?: string;
   password?: string;
-  user_type?: "buyer" | "seller" | "admin" | "manager";
+  user_type?: "user" | "admin" | "manager";
   verification_status?: "pending" | "verified" | "rejected";
   status?: "active" | "inactive" | "deleted";
   last_login?: Date;

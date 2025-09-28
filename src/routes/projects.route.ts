@@ -12,7 +12,7 @@ import {
   updateProjectStatus,
   purchaseProject
 } from '../controllers/projects.controller';
-import { isLoggedIn, requireManager, requireSeller } from '../middlewares/users.middlewares';
+import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
 // ===== SHARED SCHEMAS =====
 const PricingSchema = z.object({
@@ -414,12 +414,12 @@ export function projectsRoutes(app: OpenAPIHono) {
   app.openapi(getFeaturedProjectsRoute, getFeaturedProjects);
 
   // ===== PROTECTED ROUTES (Authentication Required) =====
-  // GET /projects/my - Get my projects (Seller only)
-  app.use('/projects/my', isLoggedIn, requireSeller);
+  // GET /projects/my - Get my projects (Users, Admins, Managers)
+  app.use('/projects/my', isLoggedIn);
   app.openapi(getMyProjectsRoute, getMyProjects);
   
-  // POST /projects - Create new project (Seller only)
-  app.use('/projects', isLoggedIn, requireSeller);
+  // POST /projects - Create new project (Users, Admins, Managers)
+  app.use('/projects', isLoggedIn);
   app.openapi(createProjectRoute, createProjectHandler);
   
   // PUT /projects/{id} - Update project (Authenticated users)

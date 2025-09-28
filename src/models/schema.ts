@@ -25,7 +25,7 @@ export const users = pgTable(
     email: varchar("email", { length: 320 }).notNull(),
     full_name: varchar("full_name", { length: 100 }),
     password: varchar("password", { length: 128 }).notNull(),
-    user_type: userTypeEnum("user_type").notNull().default("buyer"),
+    user_type: userTypeEnum("user_type").notNull().default("user"),
     verification_status: verificationStatusEnum("verification_status").notNull().default("pending"),
     status: userStatusEnum("status").notNull().default("active"),
     created_at: timestamp("created_at").notNull().defaultNow(),
@@ -173,7 +173,7 @@ export const transactions = pgTable("transactions", {
   transaction_id: varchar("transaction_id", { length: 100 }).notNull(), // External payment gateway transaction ID
   user_id: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   project_id: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  seller_id: uuid("seller_id").references(() => users.id).notNull(), // Author of the project
+  author_id: uuid("author_id").references(() => users.id).notNull(), // Author of the project
   type: transactionTypeEnum("type").notNull().default("purchase"), // "purchase", "refund"
   status: transactionStatusEnum("status").notNull().default("pending"), // "pending", "completed", "failed", "cancelled", "refunded"
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -181,7 +181,7 @@ export const transactions = pgTable("transactions", {
   payment_method: varchar("payment_method", { length: 50 }), // "razorpay", "stripe", "paypal", etc.
   payment_gateway_response: jsonb("payment_gateway_response"), // Store full response from payment gateway
   commission_amount: decimal("commission_amount", { precision: 10, scale: 2 }).notNull().default('0'), // Platform commission
-  seller_amount: decimal("seller_amount", { precision: 10, scale: 2 }).notNull().default('0'), // Amount after commission
+  author_amount: decimal("author_amount", { precision: 10, scale: 2 }).notNull().default('0'), // Amount after commission
   metadata: jsonb("metadata"), // Additional transaction data
   processed_at: timestamp("processed_at"),
   refunded_at: timestamp("refunded_at"),
@@ -192,7 +192,7 @@ export const transactions = pgTable("transactions", {
     transaction_id_idx: uniqueIndex("idx_transactions_transaction_id").on(table.transaction_id),
     user_idx: index("idx_transactions_user_id").on(table.user_id),
     project_idx: index("idx_transactions_project_id").on(table.project_id),
-    seller_idx: index("idx_transactions_seller_id").on(table.seller_id),
+    author_idx: index("idx_transactions_author_id").on(table.author_id),
     status_idx: index("idx_transactions_status").on(table.status),
     type_idx: index("idx_transactions_type").on(table.type),
     created_at_idx: index("idx_transactions_created_at").on(table.created_at),

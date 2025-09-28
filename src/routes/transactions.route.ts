@@ -3,7 +3,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { 
   getUserTransactions,
-  getSellerTransactions,
+  getAuthorTransactions,
   getTransactionById,
   createTransactionHandler,
   updateTransactionStatus,
@@ -29,7 +29,7 @@ const TransactionResponse = z.object({
   transaction_id: z.string(),
   user_id: z.string(),
   project_id: z.string(),
-  seller_id: z.string(),
+  author_id: z.string(),
   type: z.string(),
   status: z.string(),
   amount: z.string(),
@@ -37,7 +37,7 @@ const TransactionResponse = z.object({
   payment_method: z.string().nullable(),
   payment_gateway_response: z.any().nullable(),
   commission_amount: z.string(),
-  seller_amount: z.string(),
+  author_amount: z.string(),
   metadata: z.any().nullable(),
   processed_at: z.string().nullable(),
   refunded_at: z.string().nullable(),
@@ -54,7 +54,7 @@ const TransactionWithDetailsResponse = z.object({
   currency: z.string(),
   payment_method: z.string().nullable(),
   commission_amount: z.string(),
-  seller_amount: z.string(),
+  author_amount: z.string(),
   processed_at: z.string().nullable(),
   created_at: z.string(),
   project: ProjectInTransactionResponse,
@@ -65,7 +65,7 @@ const TransactionStatsResponse = z.object({
   total_transactions: z.number(),
   total_revenue: z.string().nullable(),
   total_commission: z.string().nullable(),
-  total_seller_earnings: z.string().nullable(),
+  total_author_earnings: z.string().nullable(),
   avg_transaction_amount: z.string().nullable(),
   currency_breakdown: z.any().nullable(),
 });
@@ -93,12 +93,12 @@ const getUserTransactionsRoute = createRoute({
   tags: ['Transactions'],
 });
 
-const getSellerTransactionsRoute = createRoute({
+const getAuthorTransactionsRoute = createRoute({
   method: 'get',
   path: '/transactions/sales',
   responses: {
     200: {
-      description: 'Seller transactions fetched successfully',
+      description: 'Author transactions fetched successfully',
       content: {
         'application/json': {
           schema: z.object({
@@ -139,7 +139,7 @@ const getTransactionByIdRoute = createRoute({
 const CreateTransactionRequest = z.object({
   transaction_id: z.string(),
   project_id: z.string().uuid(),
-  seller_id: z.string().uuid(),
+  author_id: z.string().uuid(),
   amount: z.number(),
   currency: z.enum(["INR", "USD"]).optional(),
   payment_method: z.string().optional(),
@@ -218,7 +218,7 @@ const getTransactionStatsRoute = createRoute({
   path: '/transactions/stats',
   request: {
     query: z.object({
-      seller_id: z.string().optional(),
+      author_id: z.string().optional(),
       start_date: z.string().optional(),
       end_date: z.string().optional(),
     }),
@@ -231,7 +231,7 @@ const getTransactionStatsRoute = createRoute({
           schema: z.object({
             stats: TransactionStatsResponse,
             filters: z.object({
-              seller_id: z.string().nullable(),
+              author_id: z.string().nullable(),
               start_date: z.string().nullable(),
               end_date: z.string().nullable(),
             }),
@@ -271,7 +271,7 @@ export function transactionsRoutes(app: OpenAPIHono) {
   // Protected routes
   app.use('/transactions/*', isLoggedIn);
   app.openapi(getUserTransactionsRoute, getUserTransactions);
-  app.openapi(getSellerTransactionsRoute, getSellerTransactions);
+  app.openapi(getAuthorTransactionsRoute, getAuthorTransactions);
   app.openapi(getTransactionByIdRoute, getTransactionById);
   
   app.openapi(createTransactionRoute, createTransactionHandler);

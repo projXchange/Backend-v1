@@ -21,7 +21,7 @@ export interface CreateTransactionData {
   transaction_id: string;
   user_id: string;
   project_id: string;
-  seller_id: string;
+  author_id: string;
   type?: "purchase" | "refund" | "commission";
   status?: "pending" | "processing" | "completed" | "failed" | "cancelled" | "refunded";
   amount: string; // decimal fields expect string values
@@ -29,7 +29,7 @@ export interface CreateTransactionData {
   payment_method?: string;
   payment_gateway_response?: any;
   commission_amount?: string; // decimal fields expect string values
-  seller_amount?: string; // decimal fields expect string values
+  author_amount?: string; // decimal fields expect string values
   metadata?: any;
 }
 
@@ -107,10 +107,10 @@ export const findByUser = async (userId: string) => {
   }
 };
 
-export const findBySeller = async (sellerId: string) => {
+export const findByAuthor = async (authorId: string) => {
   try {
-    if (!sellerId || typeof sellerId !== "string") {
-      throw new TransactionRepositoryError("Invalid seller ID parameter");
+    if (!authorId || typeof authorId !== "string") {
+      throw new TransactionRepositoryError("Invalid author ID parameter");
     }
 
     return await db.select({
@@ -121,7 +121,7 @@ export const findBySeller = async (sellerId: string) => {
       amount: transactions.amount,
       currency: transactions.currency,
       commission_amount: transactions.commission_amount,
-      seller_amount: transactions.seller_amount,
+      author_amount: transactions.author_amount,
       processed_at: transactions.processed_at,
       created_at: transactions.created_at,
       project: {
@@ -137,17 +137,17 @@ export const findBySeller = async (sellerId: string) => {
     .from(transactions)
     .innerJoin(projects, eq(transactions.project_id, projects.id))
     .innerJoin(users, eq(transactions.user_id, users.id))
-    .where(eq(transactions.seller_id, sellerId))
+    .where(eq(transactions.author_id, authorId))
     .orderBy(desc(transactions.created_at));
   } catch (error) {
-    throw new TransactionRepositoryError(`Failed to find seller transactions: ${error}`);
+    throw new TransactionRepositoryError(`Failed to find author transactions: ${error}`);
   }
 };
 
 export const createTransaction = async (transactionData: CreateTransactionData) => {
   try {
     if (!transactionData.transaction_id || !transactionData.user_id || 
-        !transactionData.project_id || !transactionData.seller_id || 
+        !transactionData.project_id || !transactionData.author_id || 
         !transactionData.amount) {
       throw new TransactionRepositoryError("Missing required fields");
     }
@@ -157,13 +157,13 @@ export const createTransaction = async (transactionData: CreateTransactionData) 
       transaction_id: transactionData.transaction_id,
       user_id: transactionData.user_id,
       project_id: transactionData.project_id,
-      seller_id: transactionData.seller_id,
+      author_id: transactionData.author_id,
       amount: transactionData.amount,
       type: transactionData.type || "purchase",
       status: transactionData.status || "pending",
       currency: transactionData.currency || "INR",
       commission_amount: transactionData.commission_amount || 0,
-      seller_amount: transactionData.seller_amount || transactionData.amount,
+      author_amount: transactionData.author_amount || transactionData.amount,
     };
 
     // Only add optional fields if they are defined
@@ -216,12 +216,12 @@ export const updateTransaction = async (id: string, updateData: UpdateTransactio
   }
 };
 
-export const getTransactionStats = async (sellerId?: string, startDate?: Date, endDate?: Date) => {
+export const getTransactionStats = async (authorId?: string, startDate?: Date, endDate?: Date) => {
   try {
     const whereConditions = [];
     
-    if (sellerId) {
-      whereConditions.push(eq(transactions.seller_id, sellerId));
+    if (authorId) {
+      whereConditions.push(eq(transactions.author_id, authorId));
     }
     
     if (startDate) {
@@ -240,7 +240,7 @@ export const getTransactionStats = async (sellerId?: string, startDate?: Date, e
       total_transactions: count().as('total_transactions'),
       total_revenue: sum(transactions.amount).as('total_revenue'),
       total_commission: sum(transactions.commission_amount).as('total_commission'),
-      total_seller_earnings: sum(transactions.seller_amount).as('total_seller_earnings'),
+      total_author_earnings: sum(transactions.author_amount).as('total_author_earnings'),
       avg_transaction_amount: avg(transactions.amount).as('avg_transaction_amount'),
       // For currency breakdown, you might want to handle this differently
       // depending on your database. This is a simplified version:

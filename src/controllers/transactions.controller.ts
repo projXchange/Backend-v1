@@ -3,7 +3,7 @@ import {
   findById,
   findByTransactionId, 
   findByUser, 
-  findBySeller,
+  findByAuthor,
   createTransaction, 
   updateTransaction,
   getTransactionStats,
@@ -32,23 +32,23 @@ export const getUserTransactions = async (c: any) => {
   }
 };
 
-export const getSellerTransactions = async (c: any) => {
+export const getAuthorTransactions = async (c: any) => {
   try {
     const userId = c.get("userId");
     
-    const transactions = await findBySeller(userId);
+    const transactions = await findByAuthor(userId);
     
     return c.json({ 
       transactions,
       total: transactions.length 
     });
   } catch (error: any) {
-    c.logger.error("Failed to fetch seller transactions", error, {
-      sellerId: c.get("userId"),
-      action: 'get_seller_transactions'
+    c.logger.error("Failed to fetch author transactions", error, {
+      authorId: c.get("userId"),
+      action: 'get_author_transactions'
     });
     return c.json({ 
-      error: error.message || "Failed to fetch seller transactions" 
+      error: error.message || "Failed to fetch author transactions" 
     }, 500);
   }
 };
@@ -73,7 +73,7 @@ export const getTransactionById = async (c: any) => {
 
     // Check if user has permission to view this transaction
     const canView = transaction.user_id === userId || 
-                   transaction.seller_id === userId || 
+                   transaction.author_id === userId || 
                    ["admin", "manager"].includes(user.user_type);
 
     if (!canView) {
@@ -101,7 +101,7 @@ export const createTransactionHandler = async (c: any) => {
     const { 
       transaction_id, 
       project_id, 
-      seller_id, 
+      author_id, 
       amount, 
       currency, 
       payment_method,
@@ -111,26 +111,26 @@ export const createTransactionHandler = async (c: any) => {
     
     const userId = c.get("userId");
 
-    if (!transaction_id || !project_id || !seller_id || !amount) {
+    if (!transaction_id || !project_id || !author_id || !amount) {
       return c.json({ error: "Missing required fields" }, 400);
     }
 
     // Calculate commission (e.g., 10% platform fee)
     const commissionRate = 0.10;
     const commissionAmount = amount * commissionRate;
-    const sellerAmount = amount - commissionAmount;
+    const authorAmount = amount - commissionAmount;
 
     const [newTransaction] = await createTransaction({
       transaction_id,
       user_id: userId,
       project_id,
-      seller_id,
+      author_id,
       amount: amount.toString(), // Convert to string for decimal field
       currency: currency || "INR",
       payment_method,
       payment_gateway_response,
       commission_amount: commissionAmount.toString(), // Convert to string for decimal field
-      seller_amount: sellerAmount.toString(), // Convert to string for decimal field
+      author_amount: authorAmount.toString(), // Convert to string for decimal field
       metadata
     });
     
@@ -206,27 +206,27 @@ export const updateTransactionStatus = async (c: any) => {
 
 export const getTransactionStatsHandler = async (c: any) => {
   try {
-    const { seller_id, start_date, end_date } = c.req.query();
+    const { author_id, start_date, end_date } = c.req.query();
     const user = c.get("user");
     const userId = c.get("userId");
 
-    // If seller_id is provided, check permissions
-    if (seller_id) {
-      const canViewSellerStats = seller_id === userId || ["admin", "manager"].includes(user.user_type);
-      if (!canViewSellerStats) {
-        return c.json({ error: "Unauthorized to view seller stats" }, 403);
+    // If author_id is provided, check permissions
+    if (author_id) {
+      const canViewAuthorStats = author_id === userId || ["admin", "manager"].includes(user.user_type);
+      if (!canViewAuthorStats) {
+        return c.json({ error: "Unauthorized to view author stats" }, 403);
       }
     }
 
     const startDate = start_date ? new Date(start_date) : undefined;
     const endDate = end_date ? new Date(end_date) : undefined;
 
-    const stats = await getTransactionStats(seller_id, startDate, endDate);
+    const stats = await getTransactionStats(author_id, startDate, endDate);
     
     return c.json({ 
       stats,
       filters: {
-        seller_id,
+        author_id,
         start_date: startDate,
         end_date: endDate
       }

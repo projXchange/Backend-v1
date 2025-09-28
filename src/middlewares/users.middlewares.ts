@@ -50,4 +50,3 @@ export const requireRole = (roles: string[]) => {
 
 export const requireAdmin = requireRole(["admin"]);
 export const requireManager = requireRole(["admin", "manager"]);
-export const requireSeller = requireRole(["seller", "admin", "manager"]);
