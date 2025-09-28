@@ -8,7 +8,8 @@ import {
   updateReviewHandler,
   deleteReviewHandler,
   getProjectRatingStatsHandler,
-  getAllReviewsHandler
+  getAllReviewsHandler,
+  approveReviewsHandler
 } from '../controllers/reviews.controller';
 import { isLoggedIn, requireManager } from '../middlewares/users.middlewares';
 
@@ -305,6 +306,61 @@ const getAllReviewsRoute = createRoute({
   tags: ['Admin - Reviews'],
 });
 
+// 8. APPROVE/REJECT REVIEWS (ADMIN) - PATCH /admin/reviews/approve
+const ApproveReviewsRequest = z.object({
+  review_ids: z.array(z.string()).min(1).max(100),
+  is_approved: z.boolean(),
+});
+
+const ApproveResult = z.object({
+  id: z.string(),
+  status: z.enum(['success', 'error']),
+  review: AdminReviewResponse.optional(),
+  error: z.string().optional(),
+});
+
+const approveReviewsRoute = createRoute({
+  method: 'patch',
+  path: '/admin/reviews/approve',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: ApproveReviewsRequest,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Review approval status updated successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            message: z.string(),
+            processed: z.number(),
+            errors: z.number(),
+            results: z.array(ApproveResult),
+            error_details: z.array(ApproveResult).optional(),
+            project_stats: z.record(z.string(), RatingStatsResponse).optional(),
+          }),
+        },
+      },
+    },
+    400: {
+      description: 'Invalid request data',
+      content: {
+        'application/json': {
+          schema: z.object({
+            error: z.string(),
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Admin - Reviews'],
+});
+
 
 export function reviewsRoutes(app: OpenAPIHono) {
   // ===== PUBLIC ROUTES (No Authentication Required) =====
@@ -334,4 +390,8 @@ export function reviewsRoutes(app: OpenAPIHono) {
   // GET /admin/reviews - Get all reviews with filtering
   app.use('/admin/reviews', isLoggedIn, requireManager);
   app.openapi(getAllReviewsRoute, getAllReviewsHandler);
+  
+  // PATCH /admin/reviews/approve - Approve/reject reviews (single or bulk)
+  app.use('/admin/reviews/approve', isLoggedIn, requireManager);
+  app.openapi(approveReviewsRoute, approveReviewsHandler);
 }

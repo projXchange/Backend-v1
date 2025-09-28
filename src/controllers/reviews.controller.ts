@@ -309,3 +309,101 @@ export const getAllReviewsHandler = async (c: any) => {
   }
 };
 
+// Admin only - Approve/Reject reviews (single or bulk)
+export const approveReviewsHandler = async (c: any) => {
+  try {
+    const { review_ids, is_approved } = await c.req.json();
+
+    // Validate input
+    if (!review_ids || !Array.isArray(review_ids) || review_ids.length === 0) {
+      return c.json({ error: "review_ids array is required and must not be empty" }, 400);
+    }
+
+    if (typeof is_approved !== 'boolean') {
+      return c.json({ error: "is_approved must be a boolean value" }, 400);
+    }
+
+    if (review_ids.length > 100) {
+      return c.json({ error: "Cannot process more than 100 reviews at once" }, 400);
+    }
+
+    // Validate all review IDs are strings
+    for (const id of review_ids) {
+      if (typeof id !== 'string') {
+        return c.json({ error: "All review IDs must be strings" }, 400);
+      }
+    }
+
+    const results = [];
+    const errors = [];
+    const projectStats = new Map(); // Track stats for each project
+
+    // Process each review
+    for (const reviewId of review_ids) {
+      try {
+        // Check if review exists
+        const result = await findById(reviewId);
+        const currentReview = result[0];
+
+        // Prepare update data
+        const updateData: any = {
+          is_approved,
+          updated_at: new Date()
+        };
+
+        const [updatedReview] = await updateReview(reviewId, updateData);
+        
+        // Store project ID for stats calculation
+        if (!projectStats.has(currentReview.project_id)) {
+          projectStats.set(currentReview.project_id, []);
+        }
+        projectStats.get(currentReview.project_id).push(updatedReview);
+
+        results.push({
+          id: reviewId,
+          status: 'success',
+          review: updatedReview
+        });
+      } catch (error: any) {
+        errors.push({
+          id: reviewId,
+          status: 'error',
+          error: error.message || 'Failed to update review'
+        });
+      }
+    }
+
+    // Get updated stats for affected projects
+    const projectStatsResults: Record<string, any> = {};
+    for (const [projectId, reviews] of projectStats) {
+      try {
+        const stats = await getProjectRatingStats(projectId);
+        projectStatsResults[projectId] = stats;
+      } catch (error) {
+        // If stats fail, continue without them
+        console.warn(`Failed to get stats for project ${projectId}:`, error);
+      }
+    }
+
+    const isSingle = review_ids.length === 1;
+    const action = is_approved ? 'approval' : 'rejection';
+    
+    return c.json({ 
+      message: `${isSingle ? 'Review' : 'Reviews'} ${action} completed successfully`,
+      processed: results.length,
+      errors: errors.length,
+      results,
+      error_details: errors.length > 0 ? errors : undefined,
+      project_stats: Object.keys(projectStatsResults).length > 0 ? projectStatsResults : undefined
+    });
+  } catch (error: any) {
+    c.logger.error("Failed to approve/reject reviews", error, {
+      adminId: c.get("userId"),
+      action: 'approve_reviews'
+    });
+    return c.json({ 
+      error: error.message || "Failed to approve/reject reviews" 
+    }, 500);
+  }
+};
+

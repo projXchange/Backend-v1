@@ -164,6 +164,7 @@ export const reviews = pgTable("reviews", {
     project_idx: index("idx_reviews_project_id").on(table.project_id),
     rating_idx: index("idx_reviews_rating").on(table.rating),
     verified_idx: index("idx_reviews_verified_purchase").on(table.is_verified_purchase),
+    approved_idx: index("idx_reviews_is_approved").on(table.is_approved),
   };
 });
 
