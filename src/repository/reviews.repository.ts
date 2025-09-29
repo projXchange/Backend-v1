@@ -59,10 +59,7 @@ export const findByProject = async (projectId: string) => {
     .from(reviews)
     .innerJoin(users, eq(reviews.user_id, users.id))
     .innerJoin(projects, eq(reviews.project_id, projects.id))
-    .where(and(
-      eq(reviews.project_id, projectId),
-      eq(reviews.is_approved, true)
-    ))
+    .where(eq(reviews.project_id, projectId))
     .orderBy(desc(reviews.created_at));
   } catch (error) {
     throw new ReviewRepositoryError(`Failed to find project reviews: ${error}`);
@@ -209,10 +206,7 @@ export const getProjectRatingStats = async (projectId: string) => {
       rating_1: sql<number>`COUNT(*) FILTER (WHERE ${reviews.rating} = 1)`
     })
     .from(reviews)
-    .where(and(
-      eq(reviews.project_id, projectId),
-      eq(reviews.is_approved, true)
-    ));
+    .where(eq(reviews.project_id, projectId));
 
     return stats[0];
   } catch (error) {
