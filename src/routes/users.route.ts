@@ -29,6 +29,7 @@ const UserResponse = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   email_verified: z.boolean(),
+  avatar: z.string().nullable(),
 });
 
 const AuthResponse = z.object({
