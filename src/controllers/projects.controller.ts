@@ -7,7 +7,6 @@ import {
   findByCategory, 
   findFeatured, 
   findWithFilters,
-  incrementViewCount,
   addBuyer,
   checkUserPurchased
 } from "../repository/projects.repository";
@@ -26,10 +25,9 @@ export const createProjectHandler = async (c: any) => {
     const { 
       title, description, key_features, category, 
       difficulty_level, tech_stack, github_url, demo_url, 
-      documentation, pricing, delivery_time,
-      // Dump fields
-      thumbnail, images, demo_video, features, tags, 
-      files, requirements, stats, rating 
+      pricing, delivery_time,
+      thumbnail, images, 
+      files, requirements, rating 
     } = await c.req.json();
 
     if (!title || !description) {
@@ -59,10 +57,6 @@ export const createProjectHandler = async (c: any) => {
       );
     }
 
-    let videoUrl = demo_video;
-    if (demo_video && demo_video.startsWith('data:')) {
-      videoUrl = await uploadImage(demo_video, `projects/temp/videos`);
-    }
 
     const projectData = {
       title: title.trim(),
@@ -74,19 +68,13 @@ export const createProjectHandler = async (c: any) => {
       tech_stack: tech_stack || [],
       github_url,
       demo_url,
-      documentation,
       pricing,
       delivery_time: delivery_time || 0,
       status: "draft" as const,
-      // Dump fields
       thumbnail: thumbnailUrl,
       images: uploadedImages,
-      demo_video: videoUrl,
-      features: features || [],
-      tags: tags || [],
       files,
       requirements,
-      stats,
       rating
     };
 
@@ -136,9 +124,6 @@ export const updateProjectHandler = async (c: any) => {
     
     // Remove fields that shouldn't be updated directly
     delete updateData.author_id;
-    delete updateData.view_count;
-    delete updateData.purchase_count;
-    delete updateData.download_count;
     delete updateData.buyers;
 
     // Handle image uploads for dump fields
@@ -170,13 +155,6 @@ export const updateProjectHandler = async (c: any) => {
       );
     }
 
-    if (updateData.demo_video && updateData.demo_video.startsWith('data:')) {
-      // Delete old video
-      if (currentProject.demo_video && currentProject.demo_video.includes('cloudinary')) {
-        await deleteImage(currentProject.demo_video);
-      }
-      updateData.demo_video = await uploadImage(updateData.demo_video, `projects/${id}/videos`);
-    }
 
     // Validate pricing if being updated
     if (updateData.pricing && (!updateData.pricing.sale_price || !updateData.pricing.original_price)) {
@@ -218,10 +196,7 @@ export const getProjectById = async (c: any) => {
     const result = await findById(id);
     const project = result[0];
 
-    // Increment view count if user is not the author
-    if (project.author_id !== userId) {
-      await incrementViewCount(id);
-    }
+    // Note: View count tracking was removed
 
     // Check if current user has purchased this project
     let hasPurchased = false;

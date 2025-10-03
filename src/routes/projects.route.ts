@@ -24,8 +24,6 @@ const PricingSchema = z.object({
 const FilesSchema = z.object({
   source_files: z.array(z.string()).optional(),
   documentation_files: z.array(z.string()).optional(),
-  assets: z.array(z.string()).optional(),
-  size_mb: z.number().optional(),
 });
 
 const RequirementsSchema = z.object({
@@ -34,12 +32,6 @@ const RequirementsSchema = z.object({
   installation_steps: z.array(z.string()).optional(),
 });
 
-const StatsSchema = z.object({
-  total_downloads: z.number().optional(),
-  total_views: z.number().optional(),
-  total_likes: z.number().optional(),
-  completion_rate: z.number().optional(),
-});
 
 const RatingSchema = z.object({
   average_rating: z.number().optional(),
@@ -64,26 +56,17 @@ const ProjectResponse = z.object({
   tech_stack: z.array(z.string()),
   github_url: z.string().nullable(),
   demo_url: z.string().nullable(),
-  documentation: z.string().nullable(),
   pricing: PricingSchema.nullable(),
   delivery_time: z.number(),
   status: z.string(),
   is_featured: z.boolean(),
-  view_count: z.number(),
-  purchase_count: z.number(),
-  download_count: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
   discount_percentage: z.number().optional(),
-  // Dump fields
   thumbnail: z.string().nullable(),
   images: z.array(z.string()),
-  demo_video: z.string().nullable(),
-  features: z.array(z.string()),
-  tags: z.array(z.string()),
   files: FilesSchema.nullable(),
   requirements: RequirementsSchema.nullable(),
-  stats: StatsSchema.nullable(),
   rating: RatingSchema.nullable(),
 });
 
@@ -109,18 +92,12 @@ const CreateProjectRequest = z.object({
   tech_stack: z.array(z.string()).optional(),
   github_url: z.string().url().optional(),
   demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
   pricing: PricingSchema.optional(),
   delivery_time: z.number().int().min(0).optional(),
-  // Dump fields
   thumbnail: z.string().optional(),
   images: z.array(z.string()).optional(),
-  demo_video: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
   files: FilesSchema.optional(),
   requirements: RequirementsSchema.optional(),
-  stats: StatsSchema.optional(),
   rating: RatingSchema.optional(),
 });
 
@@ -162,19 +139,13 @@ const UpdateProjectRequest = z.object({
   tech_stack: z.array(z.string()).optional(),
   github_url: z.string().url().optional(),
   demo_url: z.string().url().optional(),
-  documentation: z.string().optional(),
   pricing: PricingSchema.optional(),
   delivery_time: z.number().int().min(0).optional(),
   status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
-  // Dump fields
   thumbnail: z.string().optional(),
   images: z.array(z.string()).optional(),
-  demo_video: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
   files: FilesSchema.optional(),
   requirements: RequirementsSchema.optional(),
-  stats: StatsSchema.optional(),
   rating: RatingSchema.optional(),
 });
 

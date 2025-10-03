@@ -27,7 +27,6 @@ export interface CreateProjectData {
   tech_stack?: string[];
   github_url?: string;
   demo_url?: string;
-  documentation?: string;
   pricing?: {
     sale_price: number;
     original_price: number;
@@ -35,28 +34,16 @@ export interface CreateProjectData {
   };
   delivery_time?: number;
   status?: "draft" | "pending_review" | "approved" | "published" | "suspended" | "archived";
-  // Dump fields
   thumbnail?: string;
   images?: string[];
-  demo_video?: string;
-  features?: string[];
-  tags?: string[];
   files?: {
     source_files?: string[];
     documentation_files?: string[];
-    assets?: string[];
-    size_mb?: number;
   };
   requirements?: {
     system_requirements?: string[];
     dependencies?: string[];
     installation_steps?: string[];
-  };
-  stats?: {
-    total_downloads?: number;
-    total_views?: number;
-    total_likes?: number;
-    completion_rate?: number;
   };
   rating?: {
     average_rating?: number;
@@ -74,7 +61,6 @@ export interface UpdateProjectData {
   tech_stack?: string[];
   github_url?: string;
   demo_url?: string;
-  documentation?: string;
   pricing?: {
     sale_price: number;
     original_price: number;
@@ -83,32 +69,17 @@ export interface UpdateProjectData {
   delivery_time?: number;
   status?: "draft" | "pending_review" | "approved" | "published" | "suspended" | "archived";
   is_featured?: boolean;
-  view_count?: number;
-  purchase_count?: number;
-  download_count?: number;
   buyers?: string[];
-  // Dump fields
   thumbnail?: string;
   images?: string[];
-  demo_video?: string;
-  features?: string[];
-  tags?: string[];
   files?: {
     source_files?: string[];
     documentation_files?: string[];
-    assets?: string[];
-    size_mb?: number;
   };
   requirements?: {
     system_requirements?: string[];
     dependencies?: string[];
     installation_steps?: string[];
-  };
-  stats?: {
-    total_downloads?: number;
-    total_views?: number;
-    total_likes?: number;
-    completion_rate?: number;
   };
   rating?: {
     average_rating?: number;
@@ -130,7 +101,7 @@ export interface ProjectFilters {
   search?: string;
   page?: number;
   limit?: number;
-  sort_by?: "created_at" | "title" | "view_count" | "purchase_count" | "price";
+  sort_by?: "created_at" | "title" | "price";
   sort_order?: "asc" | "desc";
 }
 
@@ -279,14 +250,6 @@ export const findWithFilters = async (filters: ProjectFilters) => {
             return sort_order === "asc"
               ? queryWithWhere.orderBy(asc(projects.title))
               : queryWithWhere.orderBy(desc(projects.title));
-          case "view_count":
-            return sort_order === "asc"
-              ? queryWithWhere.orderBy(asc(projects.view_count))
-              : queryWithWhere.orderBy(desc(projects.view_count));
-          case "purchase_count":
-            return sort_order === "asc"
-              ? queryWithWhere.orderBy(asc(projects.purchase_count))
-              : queryWithWhere.orderBy(desc(projects.purchase_count));
           default:
             // Fallback to created_at
             return sort_order === "asc"
@@ -390,25 +353,6 @@ export const deleteProject = async (id: string) => {
   }
 };
 
-export const incrementViewCount = async (id: string) => {
-  try {
-    await db.update(projects)
-      .set({ view_count: sql`${projects.view_count} + 1` })
-      .where(eq(projects.id, id));
-  } catch (error) {
-    throw new ProjectRepositoryError(`Failed to increment view count: ${error}`);
-  }
-};
-
-export const incrementDownloadCount = async (id: string) => {
-  try {
-    await db.update(projects)
-      .set({ download_count: sql`${projects.download_count} + 1` })
-      .where(eq(projects.id, id));
-  } catch (error) {
-    throw new ProjectRepositoryError(`Failed to increment download count: ${error}`);
-  }
-};
 
 export const addBuyer = async (projectId: string, buyerId: string) => {
   try {
@@ -419,8 +363,7 @@ export const addBuyer = async (projectId: string, buyerId: string) => {
       const updatedBuyers = [...currentBuyers, buyerId];
       await db.update(projects)
         .set({ 
-          buyers: updatedBuyers,
-          purchase_count: sql`${projects.purchase_count} + 1`
+          buyers: updatedBuyers
         })
         .where(eq(projects.id, projectId));
     }

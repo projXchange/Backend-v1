@@ -10,7 +10,6 @@ import {
   uuid,
   jsonb,
   uniqueIndex,
-  foreignKey,
   index,
   decimal
 } from "drizzle-orm/pg-core";
@@ -66,7 +65,6 @@ export const projects = pgTable("projects", {
   tech_stack: text("tech_stack").array().notNull().default([]),
   github_url: varchar("github_url", { length: 255 }),
   demo_url: varchar("demo_url", { length: 255 }),
-  documentation: text("documentation"),
   pricing: jsonb("pricing").$type<{
     sale_price: number;
     original_price: number;
@@ -75,32 +73,18 @@ export const projects = pgTable("projects", {
   delivery_time: integer("delivery_time").notNull().default(0), // in days
   status: projectStatusEnum("status").notNull().default("draft"),
   is_featured: boolean("is_featured").notNull().default(false),
-  view_count: integer("view_count").notNull().default(0),
-  purchase_count: integer("purchase_count").notNull().default(0),
-  download_count: integer("download_count").notNull().default(0),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
   thumbnail: text("thumbnail"),
   images: text("images").array().default([]),
-  demo_video: text("demo_video"),
-  features: text("features").array().default([]),
-  tags: text("tags").array().default([]),
   files: jsonb("files").$type<{
-    source_files?: string[];
-    documentation_files?: string[];
-    assets?: string[];
-    size_mb?: number;
+    source_files?: string[]; // zip file urls
+    documentation_files?: string[]; // pdf file urls
   }>(),
   requirements: jsonb("requirements").$type<{
     system_requirements?: string[];
     dependencies?: string[];
     installation_steps?: string[];
-  }>(),
-  stats: jsonb("stats").$type<{
-    total_downloads?: number;
-    total_views?: number;
-    total_likes?: number;
-    completion_rate?: number;
   }>(),
   rating: jsonb("rating").$type<{
     average_rating?: number;
