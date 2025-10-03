@@ -9,6 +9,7 @@ import {
   checkInCart
 } from "../repository/carts.repository";
 import { findById as findProjectById } from "../repository/projects.repository";
+import { PROJECT_STATUS } from "../constants/projects";
 
 export const getUserCart = async (c: any) => {
   try {
@@ -51,7 +52,7 @@ export const addToCartHandler = async (c: any) => {
       return c.json({ error: "Project not found" }, 404);
     }
 
-    if (project.status !== "published") {
+    if (project.status !== PROJECT_STATUS.APPROVED) {
       return c.json({ error: "Project is not available for purchase" }, 400);
     }
 
