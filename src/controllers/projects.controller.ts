@@ -249,7 +249,7 @@ export const getProjectsWithFilters = async (c: any) => {
       author_id: query.author_id,
       difficulty_level: query.difficulty_level ? query.difficulty_level.split(',') : undefined,
       tech_stack: query.tech_stack ? query.tech_stack.split(',') : undefined,
-      status: query.status ? query.status.split(',') : ["published"],
+      status: query.status ? query.status.split(',') : ["approved"],
       is_featured: query.is_featured === "true" ? true : undefined,
       min_price: query.min_price ? parseFloat(query.min_price) : undefined,
       max_price: query.max_price ? parseFloat(query.max_price) : undefined,
@@ -296,7 +296,7 @@ export const getMyProjects = async (c: any) => {
   try {
     const userId = c.get("userId");
     
-    const projects = await findByAuthor(userId, true); // Include unpublished
+    const projects = await findByAuthor(userId, true); // Include unapproved
     
     return c.json({ 
       projects,
@@ -428,11 +428,11 @@ export const purchaseProject = async (c: any) => {
       return c.json({ error: "Project ID is required" }, 400);
     }
 
-    // Check if project exists and is published
+    // Check if project exists and is approved
     const result = await findById(id);
     const project = result[0];
 
-    if (project.status !== "published") {
+    if (project.status !== "approved") {
       return c.json({ error: "Project is not available for purchase" }, 400);
     }
 

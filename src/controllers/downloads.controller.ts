@@ -49,8 +49,8 @@ export const downloadProject = async (c: any) => {
       return c.json({ error: "Project not found" }, 404);
     }
 
-    // Check if project is published
-    if (project.status !== "published") {
+    // Check if project is approved
+    if (project.status !== "approved") {
       return c.json({ error: "Project is not available for download" }, 400);
     }
 

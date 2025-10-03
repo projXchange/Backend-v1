@@ -4,7 +4,7 @@ import { pgEnum } from "drizzle-orm/pg-core";
 export const difficultyEnum = pgEnum("difficulty_enum", ["beginner", "intermediate", "advanced", "expert"]);
 
 export const projectStatusEnum = pgEnum("project_status_enum", [
-  "draft", "pending_review", "approved", "published", "suspended", "archived"
+  "draft", "pending", "approved", "suspended", "archived"
 ]);
 
 export const categoryEnum = pgEnum("category_enum", [

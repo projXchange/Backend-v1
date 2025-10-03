@@ -42,7 +42,7 @@ export const addToCartHandler = async (c: any) => {
       return c.json({ error: "Project ID is required" }, 400);
     }
 
-    // Verify project exists and is published
+    // Verify project exists and is approved
     let project;
     try {
       const result = await findProjectById(project_id);
@@ -51,7 +51,7 @@ export const addToCartHandler = async (c: any) => {
       return c.json({ error: "Project not found" }, 404);
     }
 
-    if (project.status !== "published") {
+    if (project.status !== "approved") {
       return c.json({ error: "Project is not available for purchase" }, 400);
     }
 
