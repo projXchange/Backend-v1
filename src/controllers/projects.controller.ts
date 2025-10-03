@@ -249,7 +249,7 @@ export const getProjectsWithFilters = async (c: any) => {
       author_id: query.author_id,
       difficulty_level: query.difficulty_level ? query.difficulty_level.split(',') : undefined,
       tech_stack: query.tech_stack ? query.tech_stack.split(',') : undefined,
-      status: query.status ? query.status.split(',') : ["approved"],
+      status: query.status ? query.status.split(',') : undefined, // by default we need to show all the projects in any status
       is_featured: query.is_featured === "true" ? true : undefined,
       min_price: query.min_price ? parseFloat(query.min_price) : undefined,
       max_price: query.max_price ? parseFloat(query.max_price) : undefined,
