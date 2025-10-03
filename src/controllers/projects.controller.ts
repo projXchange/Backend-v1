@@ -10,7 +10,6 @@ import {
   addBuyer,
   checkUserPurchased
 } from "../repository/projects.repository";
-import { PROJECT_STATUS } from "../constants/projects";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const createProjectHandler = async (c: any) => {
@@ -71,7 +70,7 @@ export const createProjectHandler = async (c: any) => {
       demo_url,
       pricing,
       delivery_time: delivery_time || 0,
-      status: PROJECT_STATUS.DRAFT,
+      status: "draft" as const,
       thumbnail: thumbnailUrl,
       images: uploadedImages,
       files,
@@ -189,7 +188,6 @@ export const getProjectById = async (c: any) => {
   try {
     const { id } = c.req.param();
     const userId = c.get("userId");
-    const user = c.get("user");
 
     if (!id) {
       return c.json({ error: "Project ID is required" }, 400);
@@ -198,27 +196,7 @@ export const getProjectById = async (c: any) => {
     const result = await findById(id);
     const project = result[0];
 
-    // Check if user can access this project
-    const isAdmin = user && ["admin", "manager"].includes(user.user_type);
-    const isOwner = userId && project.author_id === userId;
-    const isApproved = project.status === PROJECT_STATUS.APPROVED;
-    
-    // Allow access if: admin, owner, or project is approved
-    if (!isAdmin && !isOwner && !isApproved) {
-      return c.json({ error: "Project not found or not available" }, 404);
-    }
-
-    // Log admin access to non-approved projects for auditing
-    if (isAdmin && !isApproved) {
-      c.logger.info("Admin accessed non-approved project", {
-        adminUserId: userId,
-        adminUserType: user.user_type,
-        projectId: id,
-        projectStatus: project.status,
-        projectAuthor: project.author_id,
-        action: 'admin_access_restricted_project'
-      });
-    }
+    // Note: View count tracking was removed
 
     // Check if current user has purchased this project
     let hasPurchased = false;
@@ -265,29 +243,14 @@ export const getProjectById = async (c: any) => {
 export const getProjectsWithFilters = async (c: any) => {
   try {
     const query = c.req.query();
-    const user = c.get("user"); // Get user info to check if admin/manager
-    const userId = c.get("userId");
-    
-    // Determine default status based on user role and filters
-    let defaultStatus;
-    if (user && ["admin", "manager"].includes(user.user_type)) {
-      // Admin/Manager: show all statuses if not specified
-      defaultStatus = undefined;
-    } else if (query.author_id && query.author_id === userId) {
-      // User viewing their own projects: show all their project statuses
-      defaultStatus = undefined;
-    } else {
-      // Regular users viewing public projects: only show approved projects
-      defaultStatus = [PROJECT_STATUS.APPROVED];
-    }
     
     const filters = {
       category: query.category ? query.category.split(',') : undefined,
       author_id: query.author_id,
       difficulty_level: query.difficulty_level ? query.difficulty_level.split(',') : undefined,
       tech_stack: query.tech_stack ? query.tech_stack.split(',') : undefined,
-      status: query.status ? query.status.split(',') : defaultStatus,
-      is_featured: query.is_featured === "true" ? true : query.is_featured === "false" ? false : undefined,
+      status: query.status ? query.status.split(',') : ["published"],
+      is_featured: query.is_featured === "true" ? true : undefined,
       min_price: query.min_price ? parseFloat(query.min_price) : undefined,
       max_price: query.max_price ? parseFloat(query.max_price) : undefined,
       currency: query.currency as "INR" | "USD" | undefined,
@@ -299,24 +262,6 @@ export const getProjectsWithFilters = async (c: any) => {
     };
 
     const result = await findWithFilters(filters);
-    
-    // Log special access for auditing
-    if (user && ["admin", "manager"].includes(user.user_type)) {
-      c.logger.info("Admin accessed projects list", {
-        adminUserId: userId,
-        adminUserType: user.user_type,
-        filters: filters,
-        resultCount: result.data.length,
-        action: 'admin_get_projects_list'
-      });
-    } else if (query.author_id && query.author_id === userId) {
-      c.logger.info("User accessed their own projects list", {
-        userId: userId,
-        filters: filters,
-        resultCount: result.data.length,
-        action: 'user_get_own_projects_list'
-      });
-    }
     
     // Add discount percentage to each project
     const projectsWithDiscounts = result.data.map(project => {
@@ -487,7 +432,7 @@ export const purchaseProject = async (c: any) => {
     const result = await findById(id);
     const project = result[0];
 
-    if (project.status !== PROJECT_STATUS.APPROVED) {
+    if (project.status !== "published") {
       return c.json({ error: "Project is not available for purchase" }, 400);
     }
 

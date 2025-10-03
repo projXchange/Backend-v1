@@ -8,7 +8,6 @@ import {
 } from "../repository/downloads.repository";
 import { findById as findProjectById } from "../repository/projects.repository";
 import { checkUserPurchased } from "../repository/projects.repository";
-import { PROJECT_STATUS } from "../constants/projects";
 
 export const getUserDownloads = async (c: any) => {
   try {
@@ -50,8 +49,8 @@ export const downloadProject = async (c: any) => {
       return c.json({ error: "Project not found" }, 404);
     }
 
-    // Check if project is approved
-    if (project.status !== PROJECT_STATUS.APPROVED) {
+    // Check if project is published
+    if (project.status !== "published") {
       return c.json({ error: "Project is not available for download" }, 400);
     }
 

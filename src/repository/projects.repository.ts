@@ -33,7 +33,7 @@ export interface CreateProjectData {
     currency: "INR" | "USD";
   };
   delivery_time?: number;
-  status?: "draft" | "pending" | "approved" | "suspended" | "archived";
+  status?: "draft" | "pending_review" | "approved" | "published" | "suspended" | "archived";
   thumbnail?: string;
   images?: string[];
   files?: {
@@ -67,7 +67,7 @@ export interface UpdateProjectData {
     currency: "INR" | "USD";
   };
   delivery_time?: number;
-  status?: "draft" | "pending" | "approved" | "suspended" | "archived";
+  status?: "draft" | "pending_review" | "approved" | "published" | "suspended" | "archived";
   is_featured?: boolean;
   buyers?: string[];
   thumbnail?: string;
@@ -126,7 +126,7 @@ export const findByAuthor = async (authorId: string, includeUnpublished = false)
   try {
     const whereConditions = [eq(projects.author_id, authorId)];
     if (!includeUnpublished) {
-      whereConditions.push(eq(projects.status, "approved"));
+      whereConditions.push(eq(projects.status, "published"));
     }
 
     return await db.select()
@@ -144,7 +144,7 @@ export const findByCategory = async (category: string) => {
       .from(projects)
       .where(and(
         eq(projects.category, category as any),
-        eq(projects.status, "approved")
+        eq(projects.status, "published")
       ))
       .orderBy(desc(projects.created_at));
   } catch (error) {
@@ -158,7 +158,7 @@ export const findFeatured = async (limit = 10) => {
       .from(projects)
       .where(and(
         eq(projects.is_featured, true),
-        eq(projects.status, "approved")
+        eq(projects.status, "published")
       ))
       .orderBy(desc(projects.created_at))
       .limit(limit);

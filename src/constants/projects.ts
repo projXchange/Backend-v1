@@ -4,19 +4,8 @@ import { pgEnum } from "drizzle-orm/pg-core";
 export const difficultyEnum = pgEnum("difficulty_enum", ["beginner", "intermediate", "advanced", "expert"]);
 
 export const projectStatusEnum = pgEnum("project_status_enum", [
-  "draft", "pending", "approved", "suspended", "archived"
+  "draft", "pending_review", "approved", "published", "suspended", "archived"
 ]);
-
-// JavaScript constants for use in application logic
-export const PROJECT_STATUS = {
-  DRAFT: "draft" as const,
-  PENDING: "pending" as const,
-  APPROVED: "approved" as const,
-  SUSPENDED: "suspended" as const,
-  ARCHIVED: "archived" as const
-} as const;
-
-export type ProjectStatus = typeof PROJECT_STATUS[keyof typeof PROJECT_STATUS];
 
 export const categoryEnum = pgEnum("category_enum", [
   "web_development",

@@ -141,7 +141,7 @@ const UpdateProjectRequest = z.object({
   demo_url: z.string().url().optional(),
   pricing: PricingSchema.optional(),
   delivery_time: z.number().int().min(0).optional(),
-  status: z.enum(["draft", "pending", "approved", "suspended", "archived"]).optional(),
+  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
   thumbnail: z.string().optional(),
   images: z.array(z.string()).optional(),
   files: FilesSchema.optional(),
@@ -313,7 +313,7 @@ const deleteProjectRoute = createRoute({
 
 // 8. UPDATE PROJECT STATUS (ADMIN) - PATCH /admin/projects/{id}/status
 const UpdateProjectStatusRequest = z.object({
-  status: z.enum(["draft", "pending", "approved", "suspended", "archived"]),
+  status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]),
 });
 
 const updateProjectStatusRoute = createRoute({
@@ -327,7 +327,7 @@ const updateProjectStatusRoute = createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            status: z.enum(["draft", "pending", "approved", "suspended", "archived"]).optional(),
+            status: z.enum(["draft", "pending_review", "approved", "published", "suspended", "archived"]).optional(),
             is_featured: z.boolean().optional(),
           }),
         },
