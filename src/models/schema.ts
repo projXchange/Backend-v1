@@ -65,6 +65,7 @@ export const projects = pgTable("projects", {
   tech_stack: text("tech_stack").array().notNull().default([]),
   github_url: varchar("github_url", { length: 255 }),
   demo_url: varchar("demo_url", { length: 255 }),
+  youtube_url: varchar("youtube_url", { length: 255 }),
   pricing: jsonb("pricing").$type<{
     sale_price: number;
     original_price: number;

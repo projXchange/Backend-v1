@@ -24,7 +24,7 @@ export const createProjectHandler = async (c: any) => {
 
     const { 
       title, description, key_features, category, 
-      difficulty_level, tech_stack, github_url, demo_url, 
+      difficulty_level, tech_stack, github_url, demo_url, youtube_url, 
       pricing, delivery_time,
       thumbnail, images, 
       files, requirements, rating 
@@ -68,6 +68,7 @@ export const createProjectHandler = async (c: any) => {
       tech_stack: tech_stack || [],
       github_url,
       demo_url,
+      youtube_url,
       pricing,
       delivery_time: delivery_time || 0,
       status: "draft" as const,

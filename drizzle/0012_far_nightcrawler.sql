@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "youtube_url" varchar(255);

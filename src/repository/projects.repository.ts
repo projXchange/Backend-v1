@@ -27,6 +27,7 @@ export interface CreateProjectData {
   tech_stack?: string[];
   github_url?: string;
   demo_url?: string;
+  youtube_url?: string;
   pricing?: {
     sale_price: number;
     original_price: number;
@@ -61,6 +62,7 @@ export interface UpdateProjectData {
   tech_stack?: string[];
   github_url?: string;
   demo_url?: string;
+  youtube_url?: string;
   pricing?: {
     sale_price: number;
     original_price: number;
