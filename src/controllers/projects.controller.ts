@@ -8,7 +8,8 @@ import {
   findFeatured, 
   findWithFilters,
   addBuyer,
-  checkUserPurchased
+  checkUserPurchased,
+  incrementViewCount,
 } from "../repository/projects.repository";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
@@ -126,6 +127,9 @@ export const updateProjectHandler = async (c: any) => {
     // Remove fields that shouldn't be updated directly
     delete updateData.author_id;
     delete updateData.buyers;
+    delete updateData.view_count;
+    delete updateData.purchase_count;
+    delete updateData.download_count;
 
     // Handle image uploads for dump fields
     if (updateData.thumbnail && updateData.thumbnail.startsWith('data:')) {
@@ -197,7 +201,10 @@ export const getProjectById = async (c: any) => {
     const result = await findById(id);
     const project = result[0];
 
-    // Note: View count tracking was removed
+    // Increment view count if user is not the author
+    if (project.author_id !== userId) {
+      await incrementViewCount(id);
+    }
 
     // Check if current user has purchased this project
     let hasPurchased = false;

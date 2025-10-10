@@ -92,6 +92,9 @@ export const projects = pgTable("projects", {
     total_ratings?: number;
     rating_distribution?: { [key: string]: number };
   }>(),
+  view_count: integer("view_count").notNull().default(0),
+  purchase_count: integer("purchase_count").notNull().default(0),
+  download_count: integer("download_count").notNull().default(0),
 }, (table) => {
   return {
     title_idx: index("idx_projects_title").on(table.title),

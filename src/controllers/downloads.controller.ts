@@ -6,7 +6,7 @@ import {
   getDownloadStats,
   getUserDownloadHistory
 } from "../repository/downloads.repository";
-import { findById as findProjectById } from "../repository/projects.repository";
+import { findById as findProjectById, incrementDownloadCount } from "../repository/projects.repository";
 import { checkUserPurchased } from "../repository/projects.repository";
 
 export const getUserDownloads = async (c: any) => {
@@ -75,7 +75,8 @@ export const downloadProject = async (c: any) => {
       user_agent
     });
 
-    // Note: Download count tracking was removed
+    // Increment download count
+    await incrementDownloadCount(project_id);
     
     return c.json({ 
       message: "Download recorded successfully",

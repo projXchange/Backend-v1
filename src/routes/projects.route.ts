@@ -69,6 +69,9 @@ const ProjectResponse = z.object({
   files: FilesSchema.nullable(),
   requirements: RequirementsSchema.nullable(),
   rating: RatingSchema.nullable(),
+  view_count: z.number(),
+  purchase_count: z.number(),
+  download_count: z.number(),
 });
 
 const ProjectsListResponse = z.object({
