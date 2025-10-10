@@ -233,7 +233,7 @@ const getProjectsWithFiltersRoute = createRoute({
       search: z.string().optional(),
       page: z.string().optional(),
       limit: z.string().optional(),
-      sort_by: z.enum(["created_at", "title", "view_count", "purchase_count", "price"]).optional(),
+      sort_by: z.enum(["created_at", "title", "view_count", "purchase_count", "price", "download_count"]).optional(),
       sort_order: z.enum(["asc", "desc"]).optional(),
     }),
   },

@@ -109,7 +109,7 @@ export interface ProjectFilters {
   search?: string;
   page?: number;
   limit?: number;
-  sort_by?: "created_at" | "title" | "price" | "view_count" | "purchase_count";
+  sort_by?: "created_at" | "title" | "price" | "view_count" | "purchase_count" | "download_count";
   sort_order?: "asc" | "desc";
 }
 
@@ -266,6 +266,10 @@ export const findWithFilters = async (filters: ProjectFilters) => {
             return sort_order === "asc"
               ? queryWithWhere.orderBy(asc(projects.purchase_count))
               : queryWithWhere.orderBy(desc(projects.purchase_count));    
+          case "download_count":
+            return sort_order === "asc"
+              ? queryWithWhere.orderBy(asc(projects.download_count))
+              : queryWithWhere.orderBy(desc(projects.download_count));
           default:
             // Fallback to created_at
             return sort_order === "asc"
