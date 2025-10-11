@@ -15,6 +15,7 @@ import { cartRoutes } from './routes/carts.route';
 import { reviewsRoutes } from './routes/reviews.route';
 import { transactionsRoutes } from './routes/transactions.route';
 import { downloadsRoutes } from './routes/downloads.route';
+import { dashboardRoutes } from './routes/dashboard.route';
 // import { emailTestRoutes } from './routes/email-test.route'; // TODO: Create email test route when needed
 
 const app = new OpenAPIHono();
@@ -81,6 +82,7 @@ wishlistRoutes(app);
 cartRoutes(app);
 transactionsRoutes(app);
 downloadsRoutes(app);
+dashboardRoutes(app);
 // emailTestRoutes(app); // TODO: Enable when email test route is created
 
 app.doc('/doc', {
