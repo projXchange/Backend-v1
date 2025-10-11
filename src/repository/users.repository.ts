@@ -209,6 +209,42 @@ export const findByForgotToken = async (token: string) => {
   }
 };
 
+export const findAuthorDetails = async (authorId: string) => {
+  try {
+    
+    const result = await db.select({
+      id: users.id,
+      full_name: users.full_name,
+      email: users.email,
+      avatar: users.avatar,
+      bio: users.bio,
+      location: users.location,
+      website: users.website,
+      social_links: users.social_links,
+      skills: users.skills,
+      rating: users.rating,
+      total_sales: users.total_sales,
+      experience_level: users.experience_level,
+    })
+    .from(users)
+    .where(
+      and(
+        eq(users.id, authorId),
+        ne(users.status, "deleted")
+      )
+    );
+    
+    if (!result.length) {
+      throw new UserNotFoundError(`Author with ID ${authorId} not found`);
+    }
+    return result[0];
+  } catch (error) {
+    if (error instanceof UserRepositoryError) throw error;
+    throw new UserRepositoryError(`Failed to find author details: ${error}`);
+  }
+};
+
+
 export const checkEmailExists = async (email: string): Promise<boolean> => {
   const result = await findByEmail(email);
   return result.length > 0;

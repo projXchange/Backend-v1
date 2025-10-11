@@ -11,6 +11,8 @@ import {
   checkUserPurchased,
   incrementViewCount,
 } from "../repository/projects.repository";
+import { findAuthorDetails } from "../repository/users.repository";
+import { findRelatedProjects } from "../repository/projects.repository";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const createProjectHandler = async (c: any) => {
@@ -213,7 +215,6 @@ export const getProjectById = async (c: any) => {
     
     if (userId) {
       hasPurchased = await checkUserPurchased(id, userId);
-      // You can add wishlist and cart checks here if needed
     }
 
     // Calculate discount percentage
@@ -222,6 +223,27 @@ export const getProjectById = async (c: any) => {
       discountPercentage = Math.round(
         ((project.pricing.original_price - project.pricing.sale_price) / project.pricing.original_price) * 100
       );
+    }
+
+    // Fetch author details
+    let authorDetails = null;
+    try {
+      authorDetails = await findAuthorDetails(project.author_id);
+    } catch (error) {
+      c.logger.warn("Failed to fetch author details", error);
+    }
+
+    // Fetch related projects based on tech stack
+    let relatedProjects: any[] = [];
+    try {
+      relatedProjects = await findRelatedProjects(
+        id, 
+        project.tech_stack || [], 
+        project.category,
+        3
+      );
+    } catch (error) {
+      c.logger.warn("Failed to fetch related projects", error);
     }
 
     return c.json({ 
@@ -233,7 +255,9 @@ export const getProjectById = async (c: any) => {
         has_purchased: hasPurchased,
         in_wishlist: inWishlist,
         in_cart: inCart
-      }
+      },
+      author_details: authorDetails,
+      related_projects: relatedProjects
     });
   } catch (error: any) {
     const { id } = c.req.param();
@@ -247,6 +271,7 @@ export const getProjectById = async (c: any) => {
     }, 500);
   }
 };
+
 
 export const getProjectsWithFilters = async (c: any) => {
   try {

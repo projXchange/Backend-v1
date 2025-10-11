@@ -422,4 +422,77 @@ export const checkUserPurchased = async (projectId: string, userId: string): Pro
   }
 };
 
+export const findRelatedProjects = async (
+  projectId: string, 
+  techStack: string[], 
+  category: string,
+  limit = 4
+) => {
+  try {
+    if (!projectId || typeof projectId !== "string") {
+      throw new ProjectRepositoryError("Invalid project ID parameter");
+    }
+    
+    if (!techStack || techStack.length === 0) {
+      // Fallback to category-based related projects if no tech stack
+      return await db.select({
+        id: projects.id,
+        title: projects.title,
+        description: projects.description,
+        category: projects.category,
+        tech_stack: projects.tech_stack,
+        thumbnail: projects.thumbnail,
+        pricing: projects.pricing,
+        difficulty_level: projects.difficulty_level,
+        rating: projects.rating,
+        view_count: projects.view_count,
+        purchase_count: projects.purchase_count,
+      })
+      .from(projects)
+      .where(
+        and(
+          ne(projects.id, projectId),
+          eq(projects.category, category as any),
+          eq(projects.status, "approved")
+        )
+      )
+      .orderBy(desc(projects.view_count))
+      .limit(limit);
+    }
+
+    // Find projects with overlapping tech stack using array overlap operator
+    const techStackConditions = techStack.map(tech => 
+      sql`${tech} = ANY(${projects.tech_stack})`
+    );
+    
+    return await db.select({
+      id: projects.id,
+      title: projects.title,
+      description: projects.description,
+      category: projects.category,
+      tech_stack: projects.tech_stack,
+      thumbnail: projects.thumbnail,
+      pricing: projects.pricing,
+      difficulty_level: projects.difficulty_level,
+      rating: projects.rating,
+      view_count: projects.view_count,
+      purchase_count: projects.purchase_count,
+    })
+    .from(projects)
+    .where(
+      and(
+        ne(projects.id, projectId),
+        sql`(${sql.join(techStackConditions, sql` OR `)})`,
+        eq(projects.status, "approved")
+      )
+    )
+    .orderBy(desc(projects.view_count))
+    .limit(limit);
+  } catch (error) {
+    if (error instanceof ProjectRepositoryError) throw error;
+    throw new ProjectRepositoryError(`Failed to find related projects: ${error}`);
+  }
+};
+
+
 export { ProjectRepositoryError, ProjectNotFoundError };
