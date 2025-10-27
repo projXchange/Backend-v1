@@ -18,8 +18,20 @@ class AuthTokenError extends Error {
 export const generateAccessToken = async (userId: string): Promise<string> => {
   try {
     const token = jwt.sign({ id: userId, type: "access" }, JWT_SECRET, { expiresIn: JWT_ACCESS_EXPIRES_IN });
-    const encryptedToken = await encryptToken(token);
-    return encryptedToken;
+    
+    // Only encrypt if JWE_ENCRYPTION_KEY is configured
+    if (process.env.JWE_ENCRYPTION_KEY) {
+      try {
+        const encryptedToken = await encryptToken(token);
+        return encryptedToken;
+      } catch (error: any) {
+        // If JWE fails, log warning and return plain JWT
+        console.warn('JWE encryption failed, returning plain JWT:', error.message);
+        return token;
+      }
+    }
+    
+    return token;
   } catch (error: any) {
     throw new AuthTokenError(`Failed to generate access token: ${error.message}`);
   }
@@ -28,8 +40,20 @@ export const generateAccessToken = async (userId: string): Promise<string> => {
 export const generateRefreshToken = async (userId: string): Promise<string> => {
   try {
     const token = jwt.sign({ id: userId, type: "refresh" }, JWT_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN });
-    const encryptedToken = await encryptToken(token);
-    return encryptedToken;
+    
+    // Only encrypt if JWE_ENCRYPTION_KEY is configured
+    if (process.env.JWE_ENCRYPTION_KEY) {
+      try {
+        const encryptedToken = await encryptToken(token);
+        return encryptedToken;
+      } catch (error: any) {
+        // If JWE fails, log warning and return plain JWT
+        console.warn('JWE encryption failed, returning plain JWT:', error.message);
+        return token;
+      }
+    }
+    
+    return token;
   } catch (error: any) {
     throw new AuthTokenError(`Failed to generate refresh token: ${error.message}`);
   }
@@ -37,12 +61,26 @@ export const generateRefreshToken = async (userId: string): Promise<string> => {
 
 export const verifyToken = async (token: string, logger?: any): Promise<jwt.JwtPayload | string> => {
   try {
-    // Import decryptTokenWithFallback dynamically to avoid circular dependencies
-    const { decryptTokenWithFallback } = await import("./jwe.util");
-
-    // Decrypt JWE to get JWT (with migration mode fallback)
-    const { jwt: decryptedJWT } = await decryptTokenWithFallback(token, logger);
-
+    let decryptedJWT = token;
+    
+    // Only try to decrypt if JWE_ENCRYPTION_KEY is configured
+    if (process.env.JWE_ENCRYPTION_KEY) {
+      try {
+        // Import decryptTokenWithFallback dynamically to avoid circular dependencies
+        const { decryptTokenWithFallback } = await import("./jwe.util");
+        
+        // Decrypt JWE to get JWT (with migration mode fallback)
+        const result = await decryptTokenWithFallback(token, logger);
+        decryptedJWT = result.jwt;
+      } catch (error: any) {
+        // If JWE decryption fails, try as plain JWT
+        if (logger) {
+          logger.warn('JWE decryption failed, trying plain JWT', { error: error.message });
+        }
+        decryptedJWT = token;
+      }
+    }
+    
     // Verify the JWT
     const verified = jwt.verify(decryptedJWT, JWT_SECRET);
 
