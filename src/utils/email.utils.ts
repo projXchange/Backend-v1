@@ -141,8 +141,8 @@ export const sendPasswordResetConfirmationEmail = async (
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #f4f4f4; padding: 20px; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 20px;">
-            <div style="background-color: #27ae60; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-              <span style="color: white; font-size: 30px;">✓</span>
+            <div style="background-color: #27ae60; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto; line-height: 60px; text-align: center;">
+              <span style="color: white; font-size: 30px; font-weight: bold;">✓</span>
             </div>
           </div>
           <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">Password Reset Successful</h2>
