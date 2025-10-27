@@ -2,13 +2,13 @@ import crypto from "crypto";
 import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
-// import { sendMail } from "../utils/email.utils"; // TODO: Replace with proper email service
+import { sendPasswordResetEmail, sendPasswordResetConfirmationEmail } from "../utils/email.utils";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const signup = async (c: any) => {
   try {
     const { email, password, full_name } = await c.req.json();
-    
+
     // Validate required fields
     if (!(email && password)) {
       return c.json({ error: "Missing required fields: email, password" }, 400);
@@ -31,39 +31,39 @@ export const signup = async (c: any) => {
 
     // Create user
     const hashed = await hashPassword(password);
-    const [newUser] = await createUser({ 
-      email, 
-      password: hashed, 
-      full_name 
+    const [newUser] = await createUser({
+      email,
+      password: hashed,
+      full_name
     });
-    
+
     const accessToken = generateAccessToken(newUser.id);
     const refreshToken = generateRefreshToken(newUser.id);
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
-    
+
     // Auth success logged in middleware
-    
-    return c.json({ 
-      user: userResponse, 
-      accessToken, 
-      refreshToken 
+
+    return c.json({
+      user: userResponse,
+      accessToken,
+      refreshToken
     });
-    
+
   } catch (error: any) {
     c.logger.error('User signup failed', error, {
       email: c.req.json?.()?.email,
       action: 'signup'
     });
-    return c.json({ 
-      error: error.message || "Failed to create account" 
+    return c.json({
+      error: error.message || "Failed to create account"
     }, 500);
   }
 };
 
 export const signin = async (c: any) => {
-  try{
+  try {
     const { email, password } = await c.req.json();
     if (!(email && password)) return c.json({ error: "Missing required fields" }, 400);
 
@@ -78,11 +78,11 @@ export const signin = async (c: any) => {
     const { password: _, ...userResponse } = user;
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    
+
     // Auth success logged in middleware
-    
-    return c.json({  user: userResponse, accessToken, refreshToken });
-  }catch(error:any){
+
+    return c.json({ user: userResponse, accessToken, refreshToken });
+  } catch (error: any) {
     c.logger.error('User signin failed', error, {
       email: c.req.json?.()?.email,
       action: 'signin'
@@ -123,14 +123,29 @@ export const forgotPassword = async (c: any) => {
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
-    const expiry = new Date(Date.now() + (parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "20", 10)) * 60 * 1000);
+    const expiry = new Date(Date.now() + (parseInt(process.env.RESET_TOKEN_EXPIRY_MIN || "60", 10)) * 60 * 1000);
 
     await updateUser(user.id, { forgot_password_token: hashed, forgot_password_expiry: expiry });
 
-    // TODO: Integrate with proper email service
-    // const resetUrl = `http://yourfrontend/reset-password/${resetToken}`;
-    // await sendMail(user.email, "Password reset", `Reset password: ${resetUrl}`);
-    
+    // Send password reset email via Brevo
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+      c.logger.info('Password reset email sent successfully', {
+        userId: user.id,
+        email: user.email,
+        action: 'forgot_password',
+        result: 'email_sent'
+      });
+    } catch (emailError: any) {
+      c.logger.error('Failed to send password reset email', emailError, {
+        userId: user.id,
+        email: user.email,
+        action: 'forgot_password',
+        result: 'email_failed'
+      });
+      // Don't expose email sending failure to user for security
+    }
+
     // Auth action logged in middleware
 
     return c.json({ message: "If this email exists, a reset link will be sent." });
@@ -174,11 +189,30 @@ export const resetPassword = async (c: any) => {
     const newHashed = await hashPassword(password);
     await updateUser(user.id, { password: newHashed, forgot_password_token: null, forgot_password_expiry: null });
 
+    // Send password reset confirmation email
+    try {
+      await sendPasswordResetConfirmationEmail(user.email, user.full_name || undefined);
+      c.logger.info('Password reset confirmation email sent successfully', {
+        userId: user.id,
+        email: user.email,
+        action: 'reset_password',
+        result: 'confirmation_email_sent'
+      });
+    } catch (emailError: any) {
+      c.logger.error('Failed to send password reset confirmation email', emailError, {
+        userId: user.id,
+        email: user.email,
+        action: 'reset_password',
+        result: 'confirmation_email_failed'
+      });
+      // Don't fail the password reset if email fails
+    }
+
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
-    
+
     // Auth action logged in middleware
-    
+
     return c.json({ user, accessToken, refreshToken });
   } catch (error: any) {
     c.logger.error('Password reset failed', error, {
@@ -192,17 +226,17 @@ export const resetPassword = async (c: any) => {
 export const createUserProfile = async (c: any) => {
   try {
     const userId = c.get("userId");
-    const { 
-      rating, 
-      total_sales, 
-      total_purchases, 
-      experience_level, 
-      avatar, 
-      bio, 
-      location, 
-      website, 
-      social_links, 
-      skills 
+    const {
+      rating,
+      total_sales,
+      total_purchases,
+      experience_level,
+      avatar,
+      bio,
+      location,
+      website,
+      social_links,
+      skills
     } = await c.req.json();
 
     let avatarUrl: string | undefined = undefined;
@@ -225,18 +259,18 @@ export const createUserProfile = async (c: any) => {
     };
 
     const [updatedUser] = await updateUser(userId, profileData);
-    
-    return c.json({ 
-      message: "User profile created successfully", 
-      profile: updatedUser 
+
+    return c.json({
+      message: "User profile created successfully",
+      profile: updatedUser
     });
   } catch (error: any) {
     c.logger.error("Failed to create user profile", error, {
       userId: c.get("userId"),
       action: 'create_profile'
     });
-    return c.json({ 
-      error: error.message || "Failed to create user profile" 
+    return c.json({
+      error: error.message || "Failed to create user profile"
     }, 500);
   }
 };
@@ -252,17 +286,17 @@ export const updateUserProfile = async (c: any) => {
       return c.json({ error: "Unauthorized to update this profile" }, 403);
     }
 
-    const { 
-      rating, 
-      total_sales, 
-      total_purchases, 
-      experience_level, 
-      avatar, 
-      bio, 
-      location, 
-      website, 
-      social_links, 
-      skills 
+    const {
+      rating,
+      total_sales,
+      total_purchases,
+      experience_level,
+      avatar,
+      bio,
+      location,
+      website,
+      social_links,
+      skills
     } = await c.req.json();
 
     // Get current user to handle avatar replacement
@@ -275,7 +309,7 @@ export const updateUserProfile = async (c: any) => {
     }
 
     const updateData: any = {};
-    
+
     if (rating !== undefined) updateData.rating = rating;
     if (total_sales !== undefined) updateData.total_sales = total_sales;
     if (total_purchases !== undefined) updateData.total_purchases = total_purchases;
@@ -292,7 +326,7 @@ export const updateUserProfile = async (c: any) => {
       if (currentUser.avatar) {
         await deleteImage(currentUser.avatar);
       }
-      
+
       // Upload new avatar
       updateData.avatar = await uploadImage(avatar, `users/${id}`);
     }
@@ -302,10 +336,10 @@ export const updateUserProfile = async (c: any) => {
     }
 
     const [updatedUser] = await updateUser(id, updateData);
-    
-    return c.json({ 
-      message: "User profile updated successfully", 
-      profile: updatedUser 
+
+    return c.json({
+      message: "User profile updated successfully",
+      profile: updatedUser
     });
   } catch (error: any) {
     const { id } = c.req.param();
@@ -314,8 +348,8 @@ export const updateUserProfile = async (c: any) => {
       targetUserId: id,
       action: 'update_profile'
     });
-    return c.json({ 
-      error: error.message || "Failed to update user profile" 
+    return c.json({
+      error: error.message || "Failed to update user profile"
     }, 500);
   }
 };
@@ -326,7 +360,7 @@ export const getUserProfile = async (c: any) => {
 
     const result = await findById(id);
     const user = result[0];
-    
+
     return c.json({ profile: user });
   } catch (error: any) {
     const { id } = c.req.param();
@@ -334,8 +368,8 @@ export const getUserProfile = async (c: any) => {
       targetUserId: id,
       action: 'get_user_profile'
     });
-    return c.json({ 
-      error: error.message || "Failed to fetch user profile" 
+    return c.json({
+      error: error.message || "Failed to fetch user profile"
     }, 500);
   }
 };
@@ -344,12 +378,12 @@ export const getAllUserProfiles = async (c: any) => {
   try {
     const { include_deleted } = c.req.query();
     const includeDeleted = include_deleted === "true";
-    
+
     const users = await findAllUsers(includeDeleted);
-    
-    return c.json({ 
+
+    return c.json({
       profiles: users,
-      total: users.length 
+      total: users.length
     });
   } catch (error: any) {
     const { include_deleted } = c.req.query();
@@ -358,8 +392,8 @@ export const getAllUserProfiles = async (c: any) => {
       action: 'get_all_profiles',
       includeDeleted
     });
-    return c.json({ 
-      error: error.message || "Failed to fetch user profiles" 
+    return c.json({
+      error: error.message || "Failed to fetch user profiles"
     }, 500);
   }
 };
@@ -379,7 +413,7 @@ export const deleteUserProfile = async (c: any) => {
     try {
       const result = await findById(id);
       const currentUser = result[0];
-      
+
       // Delete avatar from cloudinary
       if (currentUser.avatar) {
         await deleteImage(currentUser.avatar);
@@ -388,13 +422,13 @@ export const deleteUserProfile = async (c: any) => {
       // User doesn't exist, continue with deletion attempt
     }
 
-    await updateUser(id, { 
-      status: "deleted", 
-      deleted_at: new Date() 
+    await updateUser(id, {
+      status: "deleted",
+      deleted_at: new Date()
     });
-    
-    return c.json({ 
-      message: "User profile deleted successfully" 
+
+    return c.json({
+      message: "User profile deleted successfully"
     });
   } catch (error: any) {
     const { id } = c.req.param();
@@ -403,8 +437,8 @@ export const deleteUserProfile = async (c: any) => {
       targetUserId: id,
       action: 'delete_profile'
     });
-    return c.json({ 
-      error: error.message || "Failed to delete user profile" 
+    return c.json({
+      error: error.message || "Failed to delete user profile"
     }, 500);
   }
 };
@@ -415,15 +449,15 @@ export const getMyProfile = async (c: any) => {
 
     const result = await findById(userId);
     const user = result[0];
-    
+
     return c.json({ profile: user });
   } catch (error: any) {
     c.logger.error("Failed to fetch user profile", error, {
       userId: c.get("userId"),
       action: 'get_my_profile'
     });
-    return c.json({ 
-      error: error.message || "Failed to fetch profile" 
+    return c.json({
+      error: error.message || "Failed to fetch profile"
     }, 500);
   }
 };

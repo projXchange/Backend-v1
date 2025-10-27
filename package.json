@@ -13,6 +13,7 @@
     "test": "eslint 'src/**/*.ts'"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@hono/node-server": "^1.17.1",
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.0.2",
