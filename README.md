@@ -26,15 +26,8 @@ This is a backend project built with [Hono](https://hono.dev/) and [Drizzle ORM]
     UPSTASH_REDIS_REST_URL=https://your-redis-url.upstash.io
     UPSTASH_REDIS_REST_TOKEN=your-redis-token
     
-    # JWT Configuration
-    JWT_ACCESS_SECRET=your-super-secret-jwt-key-here
-    JWT_ACCESS_EXPIRY=15m
-    JWT_REFRESH_EXPIRY=7d
-    
-    # JWE (JSON Web Encryption) Configuration
-    # Generate a secure 256-bit key using: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-    JWE_ENCRYPTION_KEY=your-base64-encoded-32-byte-key-here
-    JWE_ALLOW_PLAIN_JWT=false  # Set to true during migration period
+    # JWT Secret
+    JWT_SECRET=your-super-secret-jwt-key-here
     
     # Cloudinary Configuration
     CLOUDINARY_CLOUD_NAME=your-cloud-name
@@ -105,12 +98,3 @@ Rate limit headers are included in responses:
 - `Retry-After`: Seconds to wait before retrying (when rate limited)
 
 When rate limited, the API returns a 429 status code with error details.
-
-## Security Features
-
-### JWT + JWE Token Encryption
-
-This API uses a dual-layer token security approach:
-
-1. **JWT (JSON Web Token)**: Provides authentication and authorization with signed tokens
-2. **JWE (JSON Web Encryption)**: Adds an encryption layer on top of JWT for enhanced security

@@ -20,27 +20,10 @@ import { dashboardRoutes } from './routes/dashboard.route';
 
 const app = new OpenAPIHono();
 
-// Validate JWE configuration at startup
-if (!process.env.JWE_ENCRYPTION_KEY) {
-  logger.fatal('JWE_ENCRYPTION_KEY environment variable is required');
-  throw new Error('JWE_ENCRYPTION_KEY environment variable is required');
-}
-
-const keyBuffer = Buffer.from(process.env.JWE_ENCRYPTION_KEY, 'base64');
-if (keyBuffer.length !== 32) {
-  logger.fatal('JWE_ENCRYPTION_KEY must be 32 bytes (256 bits)', {
-    actualLength: keyBuffer.length,
-    expectedLength: 32
-  });
-  throw new Error('JWE_ENCRYPTION_KEY must be 32 bytes (256 bits)');
-}
-
 // Initialize services
 logger.info('🚀 Starting ProjXChange API Server', { 
   version: process.env.npm_package_version || '1.0.0',
-  nodeEnv: process.env.NODE_ENV || 'development',
-  jweEnabled: true,
-  jweMigrationMode: process.env.JWE_ALLOW_PLAIN_JWT === 'true'
+  nodeEnv: process.env.NODE_ENV || 'development'
 });
 
 // Logging middleware (should be first for complete request tracking)

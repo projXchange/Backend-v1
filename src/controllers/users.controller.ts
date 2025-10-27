@@ -37,8 +37,8 @@ export const signup = async (c: any) => {
       full_name
     });
 
-    const accessToken = await generateAccessToken(newUser.id);
-    const refreshToken = await generateRefreshToken(newUser.id);
+    const accessToken = generateAccessToken(newUser.id);
+    const refreshToken = generateRefreshToken(newUser.id);
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
@@ -76,8 +76,8 @@ export const signin = async (c: any) => {
     }
     // Remove password from response
     const { password: _, ...userResponse } = user;
-    const accessToken = await generateAccessToken(user.id);
-    const refreshToken = await generateRefreshToken(user.id);
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
 
     // Auth success logged in middleware
 
@@ -208,8 +208,8 @@ export const resetPassword = async (c: any) => {
       // Don't fail the password reset if email fails
     }
 
-    const accessToken = await generateAccessToken(user.id);
-    const refreshToken = await generateRefreshToken(user.id);
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
 
     // Auth action logged in middleware
 
