@@ -9,7 +9,7 @@ export const isLoggedIn = async (c: any, next: any) => {
   if (!token) return c.json({ error: "Malformed Authorization header" }, 401);
 
   try {
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token, c.logger);
     const userId = (decoded as any).id;
     
     // Get full user data including role
