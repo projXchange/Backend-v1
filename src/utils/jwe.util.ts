@@ -1,12 +1,12 @@
 import { CompactEncrypt, compactDecrypt } from "jose";
 
+if (!process.env.JWE_ENCRYPTION_KEY) {
+  throw new Error("JWE_ENCRYPTION_KEY environment variable is not set");
+}
+
 // Get encryption key from environment
 const getEncryptionKey = (): Uint8Array => {
-  if (!process.env.JWE_ENCRYPTION_KEY) {
-    throw new Error("JWE_ENCRYPTION_KEY environment variable is not set");
-  }
-  
-  const keyBuffer = Buffer.from(process.env.JWE_ENCRYPTION_KEY, "base64");
+  const keyBuffer = Buffer.from(process.env.JWE_ENCRYPTION_KEY!, "base64");
   if (keyBuffer.length !== 32) {
     throw new Error(`JWE_ENCRYPTION_KEY must be 32 bytes (256 bits), got ${keyBuffer.length} bytes`);
   }

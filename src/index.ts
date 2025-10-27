@@ -20,34 +20,26 @@ import { dashboardRoutes } from './routes/dashboard.route';
 
 const app = new OpenAPIHono();
 
-// Validate JWE configuration at startup (optional during migration)
-let jweEnabled = false;
-if (process.env.JWE_ENCRYPTION_KEY) {
-  try {
-    const keyBuffer = Buffer.from(process.env.JWE_ENCRYPTION_KEY, 'base64');
-    if (keyBuffer.length !== 32) {
-      logger.warn('JWE_ENCRYPTION_KEY must be 32 bytes (256 bits), JWE disabled', {
-        actualLength: keyBuffer.length,
-        expectedLength: 32
-      });
-    } else {
-      jweEnabled = true;
-      logger.info('JWE encryption enabled', {
-        migrationMode: process.env.JWE_ALLOW_PLAIN_JWT === 'true'
-      });
-    }
-  } catch (error: any) {
-    logger.warn('Invalid JWE_ENCRYPTION_KEY, JWE disabled', { error: error.message });
-  }
-} else {
-  logger.warn('JWE_ENCRYPTION_KEY not set, running without JWE encryption (plain JWT mode)');
+// Validate JWE configuration at startup
+if (!process.env.JWE_ENCRYPTION_KEY) {
+  logger.fatal('JWE_ENCRYPTION_KEY environment variable is required');
+  throw new Error('JWE_ENCRYPTION_KEY environment variable is required');
+}
+
+const keyBuffer = Buffer.from(process.env.JWE_ENCRYPTION_KEY, 'base64');
+if (keyBuffer.length !== 32) {
+  logger.fatal('JWE_ENCRYPTION_KEY must be 32 bytes (256 bits)', {
+    actualLength: keyBuffer.length,
+    expectedLength: 32
+  });
+  throw new Error('JWE_ENCRYPTION_KEY must be 32 bytes (256 bits)');
 }
 
 // Initialize services
-logger.info('🚀 Starting ProjXChange API Server', {
+logger.info('🚀 Starting ProjXChange API Server', { 
   version: process.env.npm_package_version || '1.0.0',
   nodeEnv: process.env.NODE_ENV || 'development',
-  jweEnabled,
+  jweEnabled: true,
   jweMigrationMode: process.env.JWE_ALLOW_PLAIN_JWT === 'true'
 });
 
@@ -68,27 +60,27 @@ app.use('*', cors({
 // Smart rate limiting based on route patterns
 app.use('*', rateLimiter({
   identifier: (c) => {
-    const ip = c.req.header('x-forwarded-for') ||
-      c.req.header('x-real-ip') ||
-      'unknown';
+    const ip = c.req.header('x-forwarded-for') || 
+               c.req.header('x-real-ip') || 
+               'unknown';
     const userId = c.get('userId') || 'anonymous';
     return `${ip}:${userId}`;
   },
   type: (c) => {
     const path = c.req.path;
-
+    
     // Authentication routes - strictest limits
     if (path.startsWith('/auth/')) return 'auth';
-
+    
     // Admin routes - moderate limits
     if (path.startsWith('/admin/')) return 'admin';
-
+    
     // Upload/project creation routes - moderate limits
     if (path.includes('/projects') && (c.req.method === 'POST' || c.req.method === 'PUT')) return 'upload';
-
+    
     // Public browsing routes - most lenient
     if (path.startsWith('/projects') && c.req.method === 'GET') return 'public';
-
+    
     // Default to general rate limiting
     return 'general';
   }
