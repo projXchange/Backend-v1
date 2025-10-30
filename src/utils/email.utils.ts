@@ -123,6 +123,78 @@ If you didn't request a password reset, please ignore this email or contact supp
   });
 };
 
+export const sendEmailVerification = async (
+  email: string,
+  verificationToken: string,
+  userName?: string
+): Promise<void> => {
+  const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${verificationToken}`;
+  const expiryHours = process.env.EMAIL_VERIFICATION_EXPIRY_HOURS || '24';
+  
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #f4f4f4; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Welcome to ProjXchange!</h2>
+          <p>Hi${userName ? ` ${userName}` : ''},</p>
+          <p>Thank you for signing up! To complete your registration and start using ProjXchange, please verify your email address.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" 
+               style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+              Verify Email Address
+            </a>
+          </div>
+          <p style="color: #7f8c8d; font-size: 14px;">
+            Or copy and paste this link into your browser:<br>
+            <a href="${verificationUrl}" style="color: #3498db; word-break: break-all;">${verificationUrl}</a>
+          </p>
+          <p style="color: #e74c3c; font-size: 14px; margin-top: 20px;">
+            <strong>This link will expire in ${expiryHours} hours.</strong>
+          </p>
+          <p style="color: #7f8c8d; font-size: 14px; margin-top: 20px;">
+            If you didn't sign up for ProjXchange, please ignore this email or contact support if you have concerns.
+          </p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+          <p style="color: #95a5a6; font-size: 12px; text-align: center;">
+            © ${new Date().getFullYear()} ProjXchange. All rights reserved.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const textContent = `
+Welcome to ProjXchange!
+
+Hi${userName ? ` ${userName}` : ''},
+
+Thank you for signing up! To complete your registration and start using ProjXchange, please verify your email address.
+
+Click the link below to verify your email:
+
+${verificationUrl}
+
+This link will expire in ${expiryHours} hours.
+
+If you didn't sign up for ProjXchange, please ignore this email or contact support if you have concerns.
+
+© ${new Date().getFullYear()} ProjXchange. All rights reserved.
+  `;
+
+  await sendMail({
+    to: email,
+    subject: 'Verify Your Email - ProjXchange',
+    htmlContent,
+    textContent,
+  });
+};
+
 export const sendPasswordResetConfirmationEmail = async (
   email: string,
   userName?: string

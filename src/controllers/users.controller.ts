@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { createUser, findByEmail, findByForgotToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
+import { createUser, findByEmail, findByForgotToken, findByVerificationToken, updateUser, checkEmailExists, findById, findAllUsers } from "../repository/users.repository";
 import { comparePassword, hashPassword } from "../utils/password.util";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.util";
-import { sendPasswordResetEmail, sendPasswordResetConfirmationEmail } from "../utils/email.utils";
+import { sendPasswordResetEmail, sendPasswordResetConfirmationEmail, sendEmailVerification } from "../utils/email.utils";
 import { uploadImage, deleteImage } from "../utils/cloudinary.util";
 
 export const signup = async (c: any) => {
@@ -37,18 +37,45 @@ export const signup = async (c: any) => {
       full_name
     });
 
-    const accessToken = generateAccessToken(newUser.id);
-    const refreshToken = generateRefreshToken(newUser.id);
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+    const expiry = new Date(
+      Date.now() + 
+      (parseInt(process.env.EMAIL_VERIFICATION_EXPIRY_HOURS || "24", 10)) * 60 * 60 * 1000
+    );
+
+    // Store hashed token and expiry
+    await updateUser(newUser.id, {
+      email_verification_token: hashedToken,
+      email_verification_expiry: expiry
+    });
+
+    // Send verification email
+    try {
+      await sendEmailVerification(newUser.email, verificationToken, newUser.full_name || undefined);
+      c.logger.info('Email verification sent successfully', {
+        userId: newUser.id,
+        email: newUser.email,
+        action: 'signup',
+        result: 'verification_email_sent'
+      });
+    } catch (emailError: any) {
+      c.logger.error('Failed to send verification email', emailError, {
+        userId: newUser.id,
+        email: newUser.email,
+        action: 'signup',
+        result: 'verification_email_failed'
+      });
+      // Don't fail signup if email fails
+    }
 
     // Remove password from response
     const { password: _, ...userResponse } = newUser;
 
-    // Auth success logged in middleware
-
     return c.json({
-      user: userResponse,
-      accessToken,
-      refreshToken
+      message: "Signup successful. Please check your email to verify your account.",
+      user: userResponse
     });
 
   } catch (error: any) {
@@ -74,6 +101,21 @@ export const signin = async (c: any) => {
     if (!(await comparePassword(password, user.password))) {
       return c.json({ error: "Invalid credentials, password mismatch" }, 400);
     }
+
+    // Check if email is verified
+    if (!user.email_verified) {
+      c.logger.security('Login attempt by unverified user', {
+        userId: user.id,
+        email: user.email,
+        action: 'signin',
+        result: 'email_not_verified'
+      });
+      return c.json({ 
+        error: "Email not verified. Please check your email for verification link.",
+        code: "EMAIL_NOT_VERIFIED"
+      }, 403);
+    }
+
     // Remove password from response
     const { password: _, ...userResponse } = user;
     const accessToken = generateAccessToken(user.id);
@@ -458,6 +500,196 @@ export const getMyProfile = async (c: any) => {
     });
     return c.json({
       error: error.message || "Failed to fetch profile"
+    }, 500);
+  }
+};
+
+export const verifyEmail = async (c: any) => {
+  try {
+    const { token } = c.req.param();
+    
+    if (!token) {
+      return c.json({ error: "Verification token is required" }, 400);
+    }
+
+    // Hash the received token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    
+    // Find user by verification token
+    const usersFound = await findByVerificationToken(hashedToken);
+    
+    if (!usersFound.length) {
+      c.logger.security('Invalid email verification token used', {
+        token: token.substring(0, 8) + '...',
+        action: 'verify_email',
+        result: 'invalid_token'
+      });
+      return c.json({ 
+        error: "Invalid verification link. Please request a new verification email." 
+      }, 400);
+    }
+
+    const user = usersFound[0];
+
+    // Check if token is expired
+    if (user.email_verification_expiry && user.email_verification_expiry < new Date()) {
+      c.logger.security('Expired email verification token used', {
+        userId: user.id,
+        email: user.email,
+        action: 'verify_email',
+        result: 'expired_token',
+        expiry: user.email_verification_expiry
+      });
+      return c.json({ 
+        error: "Verification link has expired. Please request a new verification email." 
+      }, 400);
+    }
+
+    // Update user verification status
+    const [updatedUser] = await updateUser(user.id, {
+      email_verified: true,
+      email_verification_token: null,
+      email_verification_expiry: null
+    });
+
+    c.logger.info('Email verified successfully', {
+      userId: user.id,
+      email: user.email,
+      action: 'verify_email',
+      result: 'success'
+    });
+
+    // Remove password from response
+    const { password: _, ...userResponse } = updatedUser;
+
+    return c.json({
+      message: "Email verified successfully. You can now log in.",
+      user: userResponse
+    });
+
+  } catch (error: any) {
+    c.logger.error('Email verification failed', error, {
+      action: 'verify_email'
+    });
+    return c.json({ 
+      error: error.message || "Failed to verify email" 
+    }, 500);
+  }
+};
+
+// Simple in-memory rate limiter for resend verification
+const resendRateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+export const resendVerification = async (c: any) => {
+  try {
+    const { email } = await c.req.json();
+    
+    if (!email) {
+      return c.json({ error: "Email is required" }, 400);
+    }
+
+    // Validate email format
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return c.json({ error: "Invalid email format" }, 400);
+    }
+
+    // Rate limiting: 3 requests per hour per email
+    const now = Date.now();
+    const rateLimitKey = email.toLowerCase();
+    const rateLimitData = resendRateLimiter.get(rateLimitKey);
+
+    if (rateLimitData) {
+      if (now < rateLimitData.resetTime) {
+        if (rateLimitData.count >= 3) {
+          c.logger.security('Rate limit exceeded for resend verification', {
+            email,
+            action: 'resend_verification',
+            result: 'rate_limit_exceeded'
+          });
+          return c.json({ 
+            error: "Too many verification emails requested. Please try again later." 
+          }, 429);
+        }
+        rateLimitData.count++;
+      } else {
+        // Reset counter after 1 hour
+        rateLimitData.count = 1;
+        rateLimitData.resetTime = now + 60 * 60 * 1000;
+      }
+    } else {
+      resendRateLimiter.set(rateLimitKey, {
+        count: 1,
+        resetTime: now + 60 * 60 * 1000
+      });
+    }
+
+    // Find user by email
+    const usersFound = await findByEmail(email);
+    
+    if (!usersFound.length) {
+      // Don't reveal if email exists for security
+      c.logger.security('Resend verification attempted for non-existent email', {
+        email,
+        action: 'resend_verification',
+        result: 'user_not_found'
+      });
+      return c.json({ 
+        message: "If this email exists and is not verified, a verification link will be sent." 
+      });
+    }
+
+    const user = usersFound[0];
+
+    // Check if already verified
+    if (user.email_verified) {
+      return c.json({ 
+        error: "Email is already verified. You can log in now." 
+      }, 400);
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+    const expiry = new Date(
+      Date.now() + 
+      (parseInt(process.env.EMAIL_VERIFICATION_EXPIRY_HOURS || "24", 10)) * 60 * 60 * 1000
+    );
+
+    // Update user with new token (invalidates old token)
+    await updateUser(user.id, {
+      email_verification_token: hashedToken,
+      email_verification_expiry: expiry
+    });
+
+    // Send verification email
+    try {
+      await sendEmailVerification(user.email, verificationToken, user.full_name || undefined);
+      c.logger.info('Verification email resent successfully', {
+        userId: user.id,
+        email: user.email,
+        action: 'resend_verification',
+        result: 'email_sent'
+      });
+    } catch (emailError: any) {
+      c.logger.error('Failed to resend verification email', emailError, {
+        userId: user.id,
+        email: user.email,
+        action: 'resend_verification',
+        result: 'email_failed'
+      });
+      // Don't expose email sending failure
+    }
+
+    return c.json({ 
+      message: "If this email exists and is not verified, a verification link will be sent." 
+    });
+
+  } catch (error: any) {
+    c.logger.error('Resend verification failed', error, {
+      action: 'resend_verification'
+    });
+    return c.json({ 
+      error: error.message || "Failed to resend verification email" 
     }, 500);
   }
 };

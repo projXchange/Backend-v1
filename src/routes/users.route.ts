@@ -6,6 +6,8 @@ import {
   logout, 
   forgotPassword, 
   resetPassword,
+  verifyEmail,
+  resendVerification,
   createUserProfile,
   updateUserProfile,
   getUserProfile,
@@ -91,7 +93,10 @@ const signupRoute = createRoute({
       description: 'User created successfully',
       content: {
         'application/json': {
-          schema: AuthResponse,
+          schema: z.object({
+            message: z.string(),
+            user: UserResponse,
+          }),
         },
       },
     },
@@ -202,6 +207,61 @@ const resetPasswordRoute = createRoute({
       content: {
         'application/json': {
           schema: AuthResponse,
+        },
+      },
+    },
+  },
+  tags: ['Authentication'],
+});
+
+// 6. VERIFY EMAIL - GET /auth/verify-email/{token}
+const verifyEmailRoute = createRoute({
+  method: 'get',
+  path: '/auth/verify-email/{token}',
+  request: {
+    params: z.object({
+      token: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Email verified successfully',
+      content: {
+        'application/json': {
+          schema: z.object({
+            message: z.string(),
+            user: UserResponse,
+          }),
+        },
+      },
+    },
+  },
+  tags: ['Authentication'],
+});
+
+// 7. RESEND VERIFICATION - POST /auth/resend-verification
+const ResendVerificationRequest = z.object({
+  email: z.string().email(),
+});
+
+const resendVerificationRoute = createRoute({
+  method: 'post',
+  path: '/auth/resend-verification',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: ResendVerificationRequest,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Verification email sent',
+      content: {
+        'application/json': {
+          schema: MessageResponse,
         },
       },
     },
@@ -371,6 +431,8 @@ export function authUsersRoutes(app: OpenAPIHono) {
   app.openapi(logoutRoute, logout);
   app.openapi(forgotPasswordRoute, forgotPassword);
   app.openapi(resetPasswordRoute, resetPassword);
+  app.openapi(verifyEmailRoute, verifyEmail);
+  app.openapi(resendVerificationRoute, resendVerification);
 }
 
 export function usersRoutes(app: OpenAPIHono) {

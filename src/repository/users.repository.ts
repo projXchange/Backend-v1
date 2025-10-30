@@ -43,6 +43,8 @@ export interface UpdateUserData {
   status?: "active" | "inactive" | "deleted";
   last_login?: Date;
   email_verified?: boolean;
+  email_verification_token?: string | null;
+  email_verification_expiry?: Date | null;
   forgot_password_token?: string | null;
   forgot_password_expiry?: Date | null;
   deleted_at?: Date | null;
@@ -206,6 +208,26 @@ export const findByForgotToken = async (token: string) => {
   } catch (error) {
     if (error instanceof UserRepositoryError) throw error;
     throw new UserRepositoryError(`Failed to find user by forgot token: ${error}`);
+  }
+};
+
+export const findByVerificationToken = async (token: string) => {
+  try {
+    if (!token || typeof token !== "string") {
+      throw new UserRepositoryError("Invalid token parameter");
+    }
+    return await db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.email_verification_token, token),
+          gt(users.email_verification_expiry, new Date()),
+          ne(users.status, "deleted")
+        )
+      );
+  } catch (error) {
+    if (error instanceof UserRepositoryError) throw error;
+    throw new UserRepositoryError(`Failed to find user by verification token: ${error}`);
   }
 };
 

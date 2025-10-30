@@ -31,6 +31,8 @@ export const users = pgTable(
     updated_at: timestamp("updated_at").notNull().defaultNow().$onUpdateFn(() => new Date()),
     last_login: timestamp("last_login").notNull().defaultNow(),
     email_verified: boolean("email_verified").notNull().default(false),
+    email_verification_token: varchar("email_verification_token", { length: 128 }),
+    email_verification_expiry: timestamp("email_verification_expiry"),
     forgot_password_token: varchar("forgot_password_token", { length: 128 }),
     forgot_password_expiry: timestamp("forgot_password_expiry"),
     deleted_at: timestamp("deleted_at"),
